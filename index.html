@@ -23,7 +23,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 .db ul{margin:0;padding-left:20px}.db li{margin:5px 0}
 </style></head><body>
 <header><h1>GN.SS Games</h1>
-<div class="bar"><input id="q" type="search" placeholder="Search 134 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
+<div class="bar"><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
 <p class="count" id="n"></p></header>
 <main id="g">
 <a class="card" href="games/1-on-1-soccer.html">1 On 1 Soccer</a>
@@ -33,8 +33,6 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <a class="card" href="games/age-of-war.html">Age Of War</a>
 <a class="card" href="games/Alpha_1.2.6.html">Alpha 1.2.6</a>
 <a class="card" href="games/among-us.html">Among Us</a>
-<a class="card" href="games/awesome-tanks.html">Awesome Tanks</a>
-<a class="card" href="games/awesome-tanks-2.html">Awesome Tanks 2</a>
 <a class="card" href="games/bad-ice-cream.html">Bad Ice Cream</a>
 <a class="card" href="games/bad-piggies.html">Bad Piggies</a>
 <a class="card" href="games/basket-random.html">Basket Random</a>
@@ -48,8 +46,6 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <a class="card" href="games/bloons-TD-4.html">Bloons TD 4</a>
 <a class="card" href="games/bloxorz.html">Bloxorz</a>
 <a class="card" href="games/blumgi-racers.html">Blumgi Racers</a>
-<a class="card" href="games/bob-the-robber-2.html">Bob The Robber 2</a>
-<a class="card" href="games/bob-the-robber-5.html">Bob The Robber 5</a>
 <a class="card" href="games/boxing-random.htm">Boxing Random</a>
 <a class="card" href="games/breaking-the-bank.html">Breaking The Bank</a>
 <a class="card" href="games/bubble-shooter.html">Bubble Shooter</a>
@@ -144,8 +140,6 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <a class="card" href="games/territorial-io.html">Territorial Io</a>
 <a class="card" href="games/this-is-the-only-level.html">This Is The Only Level</a>
 <a class="card" href="games/this-is-the-only-level-too.html">This Is The Only Level Too</a>
-<a class="card" href="games/time-shooter-2.html">Time Shooter 2</a>
-<a class="card" href="games/time-shooter-3.htm">Time Shooter 3</a>
 <a class="card" href="games/trap-the-cat.html">Trap The Cat</a>
 <a class="card" href="games/trivia-crack.html">Trivia Crack</a>
 <a class="card" href="games/unicycle-hero.html">Unicycle Hero</a>
@@ -166,6 +160,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 // Add new entries at the TOP of this list (newest first). The popup opens by itself once when the newest entry changes.
 const CHANGELOG=[
  {date:"2026-10-07",items:[
+  "Removed 6 games to keep the site under GitHub size limits: Awesome Tanks 1 and 2, Bob the Robber 2 and 5, Time Shooter 2 and 3 (now 128 games)",
   "Added 2 games: Eaglercraft 1.12.2 (WASM) and Eaglercraft 26.2 (Zeus Skins) (now 134 games)",
   "Added this changelog popup",
   "Every game now keeps the tab title \"Inbox\" and the box icon, even if the game tries to change it",
