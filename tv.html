@@ -20,6 +20,10 @@ input[type=search]{width:min(260px,100%)}
 .ch .ph{width:36px;height:36px;border-radius:6px;background:#fff1;flex:none}
 .ch span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ch small{display:block;color:var(--mute);font-size:12px}.ch.on small{color:#e8ebf7cc}
+.row{display:flex;align-items:center;gap:2px}.row .ch{flex:1;min-width:0;width:auto}
+.star{flex:none;width:36px;height:36px;border:0;border-radius:8px;background:none;color:var(--mute);font-size:20px;line-height:1;cursor:pointer}
+.star:hover{background:var(--card)}.star.on{color:#ffc93c}
+#nowrow{display:flex;align-items:center;gap:6px}
 #more{display:block;margin:10px auto;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
 #player{display:flex;flex-direction:column;min-width:0;padding:12px;gap:8px}
 video{width:100%;max-height:calc(100vh - 190px);background:#000;border-radius:12px;aspect-ratio:16/9}
@@ -37,7 +41,7 @@ video{width:100%;max-height:calc(100vh - 190px);background:#000;border-radius:12
 </header>
 <div class="wrap">
 <div id="list"><div id="count">Loading channels...</div></div>
-<section id="player"><video id="v" controls playsinline></video><div id="now">Pick a channel</div><div id="msg" role="status" aria-live="polite"></div></section>
+<section id="player"><video id="v" controls playsinline></video><div id="nowrow"><button id="nowStar" class="star" type="button" hidden aria-label="Add to favorites" title="Add to favorites">&#9733;</button><div id="now">Pick a channel</div></div><div id="msg" role="status" aria-live="polite"></div></section>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
 <script>
@@ -47,8 +51,30 @@ video{width:100%;max-height:calc(100vh - 190px);background:#000;border-radius:12
 const PLAYLIST="https://iptv-org.github.io/iptv/index.m3u";
 const PAGE=150;
 const $=id=>document.getElementById(id);
-const list=$("list"),q=$("q"),cat=$("cat"),cty=$("cty"),geo=$("geo"),v=$("v"),now=$("now"),msg=$("msg");
+const list=$("list"),q=$("q"),cat=$("cat"),cty=$("cty"),geo=$("geo"),v=$("v"),now=$("now"),msg=$("msg"),nowStar=$("nowStar");
 let all=[],shown=[],limit=PAGE,hls=null,cur=null,timer=null;
+
+// Favorites are saved in this browser (localStorage), so they survive closing the site.
+// They stay on this device/browser only; clearing site data or private browsing erases them.
+const FAVKEY="gnss-tv-favs",FAV="__fav";
+const favs=new Map();
+try{JSON.parse(localStorage.getItem(FAVKEY)||"[]").forEach(c=>{if(c&&/^https:\/\//i.test(c.url||""))favs.set(c.url,c)})}catch(e){}
+function saveFavs(){try{localStorage.setItem(FAVKEY,JSON.stringify([...favs.values()]))}catch(e){}}
+function favLabel(){return"★ Favorites ("+favs.size+")"}
+function ensureFavOption(){
+  let o=[...cat.options].find(x=>x.value===FAV);
+  if(!o){o=new Option(favLabel(),FAV);cat.add(o,1)}else o.textContent=favLabel();
+}
+function toggleFav(c){
+  if(favs.has(c.url))favs.delete(c.url);
+  else favs.set(c.url,{name:c.name,url:c.url,logo:c.logo,group:c.group,cc:c.cc});
+  saveFavs();ensureFavOption();updateNowStar();
+}
+function updateNowStar(){
+  const on=!!cur&&favs.has(cur.url);
+  nowStar.hidden=!cur;nowStar.classList.toggle("on",on);
+  nowStar.title=nowStar.ariaLabel=on?"Remove from favorites":"Add to favorites";
+}
 
 let regionNames=null;try{regionNames=new Intl.DisplayNames(["en"],{type:"region"})}catch(e){}
 const countryName=c=>{if(!c)return"";try{return regionNames?regionNames.of(c)||c:c}catch(e){return c}};
@@ -79,21 +105,30 @@ function fillSelects(){
 
 function filter(){
   const t=q.value.trim().toLowerCase(),g=cat.value,c=cty.value,hg=geo.checked;
-  shown=all.filter(x=>(!hg||!/geo-?blocked/i.test(x.name))&&(!g||x.group===g)&&(!c||x.cc===c)&&(!t||x.name.toLowerCase().includes(t)));
+  if(g===FAV){   // favorites: only the search box narrows them down
+    shown=[...favs.values()].filter(x=>!t||x.name.toLowerCase().includes(t));
+  }else{
+    shown=all.filter(x=>(!hg||!/geo-?blocked/i.test(x.name))&&(!g||x.group===g)&&(!c||x.cc===c)&&(!t||x.name.toLowerCase().includes(t)));
+  }
   limit=PAGE;render();
 }
 
 function render(){
   list.textContent="";
   const cnt=document.createElement("div");cnt.id="count";
-  cnt.textContent=shown.length+" channel"+(shown.length===1?"":"s");list.appendChild(cnt);
+  cnt.textContent=shown.length+" channel"+(shown.length===1?"":"s");
+  if(cat.value===FAV&&!shown.length)cnt.textContent=q.value.trim()?"No favorites match your search.":"No favorites yet. Tap the ☆ next to a channel to save it here.";
+  list.appendChild(cnt);
   shown.slice(0,limit).forEach((c,i)=>{
+    const row=document.createElement("div");row.className="row";
+    const st=document.createElement("button");st.type="button";st.className="star"+(favs.has(c.url)?" on":"");st.dataset.i=i;
+    st.textContent=favs.has(c.url)?"★":"☆";st.title=st.ariaLabel=favs.has(c.url)?"Remove from favorites":"Add to favorites";
     const b=document.createElement("button");b.type="button";b.className="ch"+(cur&&cur.url===c.url?" on":"");b.dataset.i=i;
     if(c.logo){const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt="";im.src=c.logo;im.onerror=()=>{const p=document.createElement("div");p.className="ph";im.replaceWith(p)};b.appendChild(im)}
     else{const p=document.createElement("div");p.className="ph";b.appendChild(p)}
     const s=document.createElement("span");s.textContent=c.name;
     const sm=document.createElement("small");sm.textContent=[c.group,countryName(c.cc)].filter(Boolean).join(" · ");s.appendChild(sm);
-    b.appendChild(s);list.appendChild(b);
+    b.appendChild(s);row.appendChild(b);row.appendChild(st);list.appendChild(row);
   });
   if(shown.length>limit){const m=document.createElement("button");m.id="more";m.type="button";m.textContent="Show more";list.appendChild(m)}
 }
@@ -102,7 +137,7 @@ function setMsg(t,err){msg.textContent=t;msg.className=err?"err":""}
 function stop(){clearTimeout(timer);if(hls){hls.destroy();hls=null}v.removeAttribute("src");v.load()}
 
 function play(c){
-  stop();cur=c;now.textContent=c.name;setMsg("Loading...");
+  stop();cur=c;now.textContent=c.name;setMsg("Loading...");updateNowStar();
   try{localStorage.setItem("gnss-tv-last",c.url)}catch(e){}
   document.querySelectorAll(".ch.on").forEach(e=>e.classList.remove("on"));
   const idx=shown.indexOf(c);const el=list.querySelector('.ch[data-i="'+idx+'"]');if(el)el.classList.add("on");
@@ -121,11 +156,28 @@ function play(c){
 
 list.addEventListener("click",e=>{
   if(e.target.closest("#more")){limit+=PAGE;render();return}
+  const s=e.target.closest(".star");
+  if(s){
+    const c=shown[+s.dataset.i];toggleFav(c);
+    if(cat.value===FAV){const y=list.scrollTop;filter();list.scrollTop=y}   // row leaves the favorites view
+    else{const on=favs.has(c.url);s.classList.toggle("on",on);s.textContent=on?"★":"☆";s.title=s.ariaLabel=on?"Remove from favorites":"Add to favorites"}
+    return;
+  }
   const b=e.target.closest(".ch");if(b)play(shown[+b.dataset.i]);
+});
+nowStar.addEventListener("click",()=>{
+  if(!cur)return;toggleFav(cur);
+  if(cat.value===FAV){const y=list.scrollTop;filter();list.scrollTop=y}
+  else list.querySelectorAll(".star").forEach(s=>{const c=shown[+s.dataset.i];if(c&&c.url===cur.url){const on=favs.has(c.url);s.classList.toggle("on",on);s.textContent=on?"★":"☆"}});
 });
 [q,cat,cty,geo].forEach(el=>el.addEventListener("input",filter));
 
+ensureFavOption();
 fetch(PLAYLIST).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(t=>{
-  all=parse(t);fillSelects();filter();
-}).catch(()=>{list.innerHTML="";const d=document.createElement("div");d.id="count";d.textContent="Couldn't load the channel list. Check your connection and refresh.";list.appendChild(d)});
+  all=parse(t);fillSelects();ensureFavOption();filter();
+}).catch(()=>{
+  // Playlist didn't load: favorites are saved locally, so they can still be shown.
+  if(favs.size){cat.value=FAV;filter();const d=document.createElement("div");d.id="count";d.textContent="Couldn't load the full channel list, showing your favorites.";list.prepend(d)}
+  else{list.innerHTML="";const d=document.createElement("div");d.id="count";d.textContent="Couldn't load the channel list. Check your connection and refresh.";list.appendChild(d)}
+});
 </script></body></html>
