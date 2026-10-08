@@ -3,25 +3,38 @@
 <title>Inbox</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
-:root{--bg:#0f1220;--card:#1b2036;--hi:#4f7cff;--fg:#e8ebf7}
+:root{--bg:#0f1220;--card:#1b2036;--hi:#4f7cff;--fg:#e8ebf7;--line:#333a5c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif}
 header{padding:28px 16px 12px;text-align:center}h1{margin:0 0 12px}
-#q{width:min(480px,100%);padding:10px 14px;border-radius:10px;border:1px solid #333a5c;background:var(--card);color:var(--fg);font-size:16px}
+.bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#q{width:min(480px,100%);padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px}
+#logBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
+#logBtn:hover{background:var(--hi)}
+#logBtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5a5f;margin-left:8px}
 main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:16px;max-width:1200px;margin:auto}
 .card{display:flex;align-items:center;justify-content:center;text-align:center;min-height:70px;padding:12px;background:var(--card);border-radius:12px;color:var(--fg);text-decoration:none;font-weight:600}
 .card:hover{background:var(--hi)}.count{opacity:.6;font-size:14px}
+dialog{width:min(560px,calc(100% - 32px));max-height:80vh;overflow:auto;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--fg)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.dh{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:20px}
+.dh button{background:none;border:0;color:var(--fg);font-size:26px;line-height:1;cursor:pointer}
+.db{padding:8px 20px 20px}.db h3{margin:18px 0 6px;color:var(--hi);font-size:15px;letter-spacing:.03em}
+.db ul{margin:0;padding-left:20px}.db li{margin:5px 0}
 </style></head><body>
-<header><h1>GN.SS Games</h1><input id="q" type="search" placeholder="Search 132 games..." autofocus><p class="count" id="n"></p></header>
+<header><h1>GN.SS Games</h1>
+<div class="bar"><input id="q" type="search" placeholder="Search 134 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
+<p class="count" id="n"></p></header>
 <main id="g">
 <a class="card" href="games/1-on-1-soccer.html">1 On 1 Soccer</a>
 <a class="card" href="games/1-on-1-tennis.html">1 On 1 Tennis</a>
-<a class="card" href="games/2048-cupcakes.html">2048 Cupcakes</a>
 <a class="card" href="games/2048.html">2048</a>
+<a class="card" href="games/2048-cupcakes.html">2048 Cupcakes</a>
 <a class="card" href="games/age-of-war.html">Age Of War</a>
 <a class="card" href="games/Alpha_1.2.6.html">Alpha 1.2.6</a>
 <a class="card" href="games/among-us.html">Among Us</a>
-<a class="card" href="games/awesome-tanks-2.html">Awesome Tanks 2</a>
 <a class="card" href="games/awesome-tanks.html">Awesome Tanks</a>
+<a class="card" href="games/awesome-tanks-2.html">Awesome Tanks 2</a>
 <a class="card" href="games/bad-ice-cream.html">Bad Ice Cream</a>
 <a class="card" href="games/bad-piggies.html">Bad Piggies</a>
 <a class="card" href="games/basket-random.html">Basket Random</a>
@@ -29,10 +42,10 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:
 <a class="card" href="games/basketball-stars.html">Basketball Stars</a>
 <a class="card" href="games/Beta_1.3.html">Beta 1.3</a>
 <a class="card" href="games/bit-planes.htm">Bit Planes</a>
+<a class="card" href="games/bloons-TD.html">Bloons TD</a>
 <a class="card" href="games/bloons-TD-2.html">Bloons TD 2</a>
 <a class="card" href="games/bloons-TD-3.html">Bloons TD 3</a>
 <a class="card" href="games/bloons-TD-4.html">Bloons TD 4</a>
-<a class="card" href="games/bloons-TD.html">Bloons TD</a>
 <a class="card" href="games/bloxorz.html">Bloxorz</a>
 <a class="card" href="games/blumgi-racers.html">Blumgi Racers</a>
 <a class="card" href="games/bob-the-robber-2.html">Bob The Robber 2</a>
@@ -46,24 +59,26 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:
 <a class="card" href="games/circloO.html">CircloO</a>
 <a class="card" href="games/clash-of-vikings.html">Clash Of Vikings</a>
 <a class="card" href="games/cookie-clicker.htm">Cookie Clicker</a>
+<a class="card" href="games/dadish.html">Dadish</a>
 <a class="card" href="games/dadish-2.html">Dadish 2</a>
 <a class="card" href="games/dadish-3.html">Dadish 3</a>
-<a class="card" href="games/dadish.html">Dadish</a>
 <a class="card" href="games/death-run-3D.html">Death Run 3D</a>
 <a class="card" href="games/doodle-jump.html">Doodle Jump</a>
 <a class="card" href="games/dreadhead-parkour.htm">Dreadhead Parkour</a>
 <a class="card" href="games/drive-mad.htm">Drive Mad</a>
-<a class="card" href="games/duck-life-2.html">Duck Life 2</a>
 <a class="card" href="games/duck-life.html">Duck Life</a>
+<a class="card" href="games/duck-life-2.html">Duck Life 2</a>
 <a class="card" href="games/ducklings-io.html">Ducklings Io</a>
+<a class="card" href="games/eaglercraft-1-12-2-wasm.html">Eaglercraft 1.12.2 (WASM)</a>
+<a class="card" href="games/eaglercraft-26-2-zeus-skins.html">Eaglercraft 26.2 (Zeus Skins)</a>
 <a class="card" href="games/earn-to-die.html">Earn To Die</a>
 <a class="card" href="games/elastic-face.htm">Elastic Face</a>
 <a class="card" href="games/evil-glitch.html">Evil Glitch</a>
 <a class="card" href="games/fancy-pants-adventure.html">Fancy Pants Adventure</a>
+<a class="card" href="games/fireboy-and-watergirl.html">Fireboy And Watergirl</a>
 <a class="card" href="games/fireboy-and-watergirl-2.html">Fireboy And Watergirl 2</a>
 <a class="card" href="games/fireboy-and-watergirl-3.html">Fireboy And Watergirl 3</a>
 <a class="card" href="games/fireboy-and-watergirl-4.html">Fireboy And Watergirl 4</a>
-<a class="card" href="games/fireboy-and-watergirl.html">Fireboy And Watergirl</a>
 <a class="card" href="games/flappy-bird.html">Flappy Bird</a>
 <a class="card" href="games/flood-runner-2.html">Flood Runner 2</a>
 <a class="card" href="games/flood-runner-3.html">Flood Runner 3</a>
@@ -81,23 +96,23 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:
 <a class="card" href="games/johnny-trigger.html">Johnny Trigger</a>
 <a class="card" href="games/jumping-shell.html">Jumping Shell</a>
 <a class="card" href="games/karate-bros.html">Karate Bros</a>
-<a class="card" href="games/learn-to-fly-idle.html">Learn To Fly Idle</a>
 <a class="card" href="games/learn-to-fly.html">Learn To Fly</a>
+<a class="card" href="games/learn-to-fly-idle.html">Learn To Fly Idle</a>
 <a class="card" href="games/level-devil.html">Level Devil</a>
 <a class="card" href="games/merge-round-racers.html">Merge Round Racers</a>
 <a class="card" href="games/minesweeper.html">Minesweeper</a>
 <a class="card" href="games/monster-tracks.html">Monster Tracks</a>
+<a class="card" href="games/moto-x3m.htm">Moto X3m</a>
 <a class="card" href="games/moto-x3m-2.html">Moto X3m 2</a>
 <a class="card" href="games/moto-x3m-3.html">Moto X3m 3</a>
-<a class="card" href="games/moto-x3m.htm">Moto X3m</a>
 <a class="card" href="games/opposite-day.html">Opposite Day</a>
 <a class="card" href="games/ovo-2.html">Ovo 2</a>
 <a class="card" href="games/pac-man.html">Pac Man</a>
 <a class="card" href="games/papas-burgeria.html">Papas Burgeria</a>
 <a class="card" href="games/papas-pizzeria.html">Papas Pizzeria</a>
+<a class="card" href="games/parking-fury.html">Parking Fury</a>
 <a class="card" href="games/parking-fury-2.html">Parking Fury 2</a>
 <a class="card" href="games/parking-fury-3.html">Parking Fury 3</a>
-<a class="card" href="games/parking-fury.html">Parking Fury</a>
 <a class="card" href="games/picos-school.html">Picos School</a>
 <a class="card" href="games/ping-pong-chaos.html">Ping Pong Chaos</a>
 <a class="card" href="games/pixel-speedrun.html">Pixel Speedrun</a>
@@ -107,17 +122,17 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:
 <a class="card" href="games/ragdoll-archers.htm">Ragdoll Archers</a>
 <a class="card" href="games/retro-bowl.html">Retro Bowl</a>
 <a class="card" href="games/retro-ping-pong.html">Retro Ping Pong</a>
-<a class="card" href="games/riddle-school-2.html">Riddle School 2</a>
 <a class="card" href="games/riddle-school.html">Riddle School</a>
-<a class="card" href="games/run-2.html">Run 2</a>
+<a class="card" href="games/riddle-school-2.html">Riddle School 2</a>
 <a class="card" href="games/run.html">Run</a>
+<a class="card" href="games/run-2.html">Run 2</a>
 <a class="card" href="games/sand-game.html">Sand Game</a>
 <a class="card" href="games/slope-2-player.html">Slope 2 Player</a>
 <a class="card" href="games/sm-64.html">Sm 64</a>
 <a class="card" href="games/soccer-bros.html">Soccer Bros</a>
 <a class="card" href="games/soccer-random.htm">Soccer Random</a>
-<a class="card" href="games/space-is-key-2.html">Space Is Key 2</a>
 <a class="card" href="games/space-is-key.html">Space Is Key</a>
+<a class="card" href="games/space-is-key-2.html">Space Is Key 2</a>
 <a class="card" href="games/spacebar-clicker.html">Spacebar Clicker</a>
 <a class="card" href="games/stack.html">Stack</a>
 <a class="card" href="games/stacktris.html">Stacktris</a>
@@ -127,27 +142,50 @@ main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:
 <a class="card" href="games/stick-merge.html">Stick Merge</a>
 <a class="card" href="games/stickman-hook.html">Stickman Hook</a>
 <a class="card" href="games/territorial-io.html">Territorial Io</a>
-<a class="card" href="games/this-is-the-only-level-too.html">This Is The Only Level Too</a>
 <a class="card" href="games/this-is-the-only-level.html">This Is The Only Level</a>
+<a class="card" href="games/this-is-the-only-level-too.html">This Is The Only Level Too</a>
 <a class="card" href="games/time-shooter-2.html">Time Shooter 2</a>
 <a class="card" href="games/time-shooter-3.htm">Time Shooter 3</a>
 <a class="card" href="games/trap-the-cat.html">Trap The Cat</a>
 <a class="card" href="games/trivia-crack.html">Trivia Crack</a>
 <a class="card" href="games/unicycle-hero.html">Unicycle Hero</a>
-<a class="card" href="games/vex-x3m-2.html">Vex X3m 2</a>
 <a class="card" href="games/vex-x3m.html">Vex X3m</a>
+<a class="card" href="games/vex-x3m-2.html">Vex X3m 2</a>
 <a class="card" href="games/volley-random.html">Volley Random</a>
 <a class="card" href="games/we-become-what-we-behold.html">We Become What We Behold</a>
 <a class="card" href="games/wheelie-bike.html">Wheelie Bike</a>
 <a class="card" href="games/wordle-unlimited.html">Wordle Unlimited</a>
+<a class="card" href="games/worlds-hardest-game.html">Worlds Hardest Game</a>
 <a class="card" href="games/worlds-hardest-game-2.html">Worlds Hardest Game 2</a>
 <a class="card" href="games/worlds-hardest-game-3.html">Worlds Hardest Game 3</a>
-<a class="card" href="games/worlds-hardest-game.html">Worlds Hardest Game</a>
 <a class="card" href="games/wrestle-bros.html">Wrestle Bros</a>
 <a class="card" href="games/zombie-rush.html">Zombie Rush</a>
 </main>
+<dialog id="log" aria-labelledby="logT"><div class="dh"><h2 id="logT">Changelog</h2><button id="logX" type="button" aria-label="Close">&times;</button></div><div class="db" id="logBody"></div></dialog>
 <script>
+// Add new entries at the TOP of this list (newest first). The popup opens by itself once when the newest entry changes.
+const CHANGELOG=[
+ {date:"2026-10-07",items:[
+  "Added 2 games: Eaglercraft 1.12.2 (WASM) and Eaglercraft 26.2 (Zeus Skins) (now 134 games)",
+  "Added this changelog popup",
+  "Every game now keeps the tab title \"Inbox\" and the box icon, even if the game tries to change it",
+  "Changed the tab name to \"Inbox\" with a blank box icon on the home page and all game pages",
+  "Moved the site to the new address gme-io.github.io/gn.ss after the GitHub username change",
+  "Launched the site with a searchable home page and 132 games that passed a load test"
+ ]}
+];
 const q=document.getElementById("q"),n=document.getElementById("n"),cs=[...document.querySelectorAll(".card")];
 function f(){const v=q.value.trim().toLowerCase();let c=0;cs.forEach(e=>{const s=e.textContent.toLowerCase().includes(v);e.style.display=s?"":"none";if(s)c++});n.textContent=c+" games"}
 q.addEventListener("input",f);f();
+const dlg=document.getElementById("log"),dot=document.getElementById("dot"),KEY="gnss-changelog-seen";
+const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+document.getElementById("logBody").innerHTML=CHANGELOG.map(e=>"<h3>"+fmt(e.date).toUpperCase()+"</h3><ul>"+e.items.map(i=>"<li>"+i.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</li>").join("")+"</ul>").join("");
+const newest=CHANGELOG[0].date+"#"+CHANGELOG[0].items.length;
+function seen(){try{return localStorage.getItem(KEY)}catch(e){return null}}
+function markSeen(){try{localStorage.setItem(KEY,newest)}catch(e){}dot.hidden=true}
+function openLog(){if(!dlg.open)dlg.showModal();markSeen()}
+document.getElementById("logBtn").onclick=openLog;
+document.getElementById("logX").onclick=()=>dlg.close();
+dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close()});
+if(seen()!==newest){dot.hidden=false;openLog()}
 </script></body></html>
