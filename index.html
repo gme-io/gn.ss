@@ -8,8 +8,9 @@
 header{padding:28px 16px 12px;text-align:center}h1{margin:0 0 12px}
 .bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #q{width:min(480px,100%);padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px}
-#logBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
-#logBtn:hover{background:var(--hi)}
+#logBtn,#tvBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
+#logBtn:hover,#tvBtn:hover{background:var(--hi)}
+#tvBtn{text-decoration:none;display:inline-flex;align-items:center}
 #logBtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5a5f;margin-left:8px}
 main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:16px;max-width:1200px;margin:auto}
 .card{display:flex;align-items:center;justify-content:center;text-align:center;min-height:70px;padding:12px;background:var(--card);border-radius:12px;color:var(--fg);text-decoration:none;font-weight:600}
@@ -23,7 +24,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 .db ul{margin:0;padding-left:20px}.db li{margin:5px 0}
 </style></head><body>
 <header><h1>GN.SS Games</h1>
-<div class="bar"><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
+<div class="bar"><a id="tvBtn" href="tv.html">TV</a><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
 <p class="count" id="n"></p></header>
 <main id="g">
 <a class="card" href="games/1-on-1-soccer.html">1 On 1 Soccer</a>
@@ -160,6 +161,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 // Add new entries at the TOP of this list (newest first). The popup opens by itself once when the newest entry changes.
 const CHANGELOG=[
  {date:"2026-10-07",items:[
+  "Added a TV page (button left of the search bar) with thousands of free live channels from the public iptv-org playlist. Some channels may be offline or blocked in your region",
   "Removed 6 games to keep the site under GitHub size limits: Awesome Tanks 1 and 2, Bob the Robber 2 and 5, Time Shooter 2 and 3 (now 128 games)",
   "Added 2 games: Eaglercraft 1.12.2 (WASM) and Eaglercraft 26.2 (Zeus Skins) (now 134 games)",
   "Added this changelog popup",

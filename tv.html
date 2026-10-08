@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inbox</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+:root{--bg:#0f1220;--card:#1b2036;--hi:#4f7cff;--fg:#e8ebf7;--line:#333a5c;--mute:#9aa3c7}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:20px;margin-right:auto}
+a.back,select,input{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:15px;text-decoration:none}
+a.back:hover{background:var(--hi)}
+input[type=search]{width:min(260px,100%)}
+.chk{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:14px;cursor:pointer}.chk input{padding:0;width:auto}
+.wrap{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:0}
+#list{overflow:auto;border-right:1px solid var(--line);padding:8px}
+.ch{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border:0;border-radius:10px;background:none;color:var(--fg);font-size:15px;text-align:left;cursor:pointer}
+.ch:hover{background:var(--card)}.ch.on{background:var(--hi)}
+.ch img{width:36px;height:36px;object-fit:contain;border-radius:6px;background:#fff1;flex:none}
+.ch .ph{width:36px;height:36px;border-radius:6px;background:#fff1;flex:none}
+.ch span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch small{display:block;color:var(--mute);font-size:12px}.ch.on small{color:#e8ebf7cc}
+#more{display:block;margin:10px auto;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+#player{display:flex;flex-direction:column;min-width:0;padding:12px;gap:8px}
+video{width:100%;max-height:calc(100vh - 190px);background:#000;border-radius:12px;aspect-ratio:16/9}
+#now{font-weight:600}#msg{color:var(--mute);min-height:1.4em}#msg.err{color:#ff8a8a}
+#count{color:var(--mute);font-size:13px;padding:4px 8px}
+@media(max-width:760px){.wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr}#player{order:-1}#list{border-right:0;border-top:1px solid var(--line)}video{max-height:40vh}}
+</style></head><body>
+<header>
+<a class="back" href="index.html">&larr; Games</a>
+<h1>TV</h1>
+<input id="q" type="search" placeholder="Search channels...">
+<select id="cat" aria-label="Category"><option value="">All categories</option></select>
+<select id="cty" aria-label="Country"><option value="">All countries</option></select>
+<label class="chk"><input type="checkbox" id="geo" checked> Hide geo-blocked</label>
+</header>
+<div class="wrap">
+<div id="list"><div id="count">Loading channels...</div></div>
+<section id="player"><video id="v" controls playsinline></video><div id="now">Pick a channel</div><div id="msg" role="status" aria-live="polite"></div></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
+<script>
+// Keep the tab on "Inbox" like the rest of the site.
+(function(){function f(){try{if(document.title!=="Inbox")document.title="Inbox"}catch(e){}}f();setInterval(f,500)})();
+
+const PLAYLIST="https://iptv-org.github.io/iptv/index.m3u";
+const PAGE=150;
+const $=id=>document.getElementById(id);
+const list=$("list"),q=$("q"),cat=$("cat"),cty=$("cty"),geo=$("geo"),v=$("v"),now=$("now"),msg=$("msg");
+let all=[],shown=[],limit=PAGE,hls=null,cur=null,timer=null;
+
+let regionNames=null;try{regionNames=new Intl.DisplayNames(["en"],{type:"region"})}catch(e){}
+const countryName=c=>{if(!c)return"";try{return regionNames?regionNames.of(c)||c:c}catch(e){return c}};
+
+function parse(text){
+  const out=[],lines=text.split(/\r?\n/);
+  for(let i=0;i<lines.length;i++){
+    const m=lines[i].match(/^#EXTINF:[^,"]*?((?:\s+[\w-]+="[^"]*")*)\s*,(.*)$/);
+    if(!m)continue;
+    let url="";
+    for(let j=i+1;j<lines.length&&j<i+6;j++){const l=lines[j].trim();if(l&&l[0]!=="#"){url=l;break}}
+    if(!/^https:\/\//i.test(url))continue;               // http streams are blocked on an https site
+    const a={};m[1].replace(/([\w-]+)="([^"]*)"/g,(_,k,val)=>a[k]=val);
+    const group=(a["group-title"]||"Undefined").split(";")[0].trim()||"Undefined";
+    if(/^xxx$|adult/i.test(group))continue;
+    let cc=((a["tvg-id"]||"").match(/\.([a-z]{2})(?:@|$)/i)||[])[1]||"";cc=cc.toUpperCase();if(cc==="UK")cc="GB";
+    out.push({name:m[2].trim()||"Channel",url,logo:/^https:/i.test(a["tvg-logo"]||"")?a["tvg-logo"]:"",group,cc});
+  }
+  return out;
+}
+
+function fillSelects(){
+  const g=[...new Set(all.map(c=>c.group))].sort((a,b)=>a.localeCompare(b));
+  g.forEach(x=>cat.add(new Option(x,x)));
+  const cs=[...new Set(all.map(c=>c.cc).filter(Boolean))].map(c=>[c,countryName(c)]).sort((a,b)=>a[1].localeCompare(b[1]));
+  cs.forEach(([c,n])=>cty.add(new Option(n,c)));
+}
+
+function filter(){
+  const t=q.value.trim().toLowerCase(),g=cat.value,c=cty.value,hg=geo.checked;
+  shown=all.filter(x=>(!hg||!/geo-?blocked/i.test(x.name))&&(!g||x.group===g)&&(!c||x.cc===c)&&(!t||x.name.toLowerCase().includes(t)));
+  limit=PAGE;render();
+}
+
+function render(){
+  list.textContent="";
+  const cnt=document.createElement("div");cnt.id="count";
+  cnt.textContent=shown.length+" channel"+(shown.length===1?"":"s");list.appendChild(cnt);
+  shown.slice(0,limit).forEach((c,i)=>{
+    const b=document.createElement("button");b.type="button";b.className="ch"+(cur&&cur.url===c.url?" on":"");b.dataset.i=i;
+    if(c.logo){const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt="";im.src=c.logo;im.onerror=()=>{const p=document.createElement("div");p.className="ph";im.replaceWith(p)};b.appendChild(im)}
+    else{const p=document.createElement("div");p.className="ph";b.appendChild(p)}
+    const s=document.createElement("span");s.textContent=c.name;
+    const sm=document.createElement("small");sm.textContent=[c.group,countryName(c.cc)].filter(Boolean).join(" · ");s.appendChild(sm);
+    b.appendChild(s);list.appendChild(b);
+  });
+  if(shown.length>limit){const m=document.createElement("button");m.id="more";m.type="button";m.textContent="Show more";list.appendChild(m)}
+}
+
+function setMsg(t,err){msg.textContent=t;msg.className=err?"err":""}
+function stop(){clearTimeout(timer);if(hls){hls.destroy();hls=null}v.removeAttribute("src");v.load()}
+
+function play(c){
+  stop();cur=c;now.textContent=c.name;setMsg("Loading...");
+  try{localStorage.setItem("gnss-tv-last",c.url)}catch(e){}
+  document.querySelectorAll(".ch.on").forEach(e=>e.classList.remove("on"));
+  const idx=shown.indexOf(c);const el=list.querySelector('.ch[data-i="'+idx+'"]');if(el)el.classList.add("on");
+  const fail=()=>setMsg("This channel isn't working right now. Try another one.",true);
+  timer=setTimeout(()=>{if(v.paused||v.readyState<3)fail()},20000);
+  v.onplaying=()=>{clearTimeout(timer);setMsg("")};
+  if(window.Hls&&Hls.isSupported()){
+    hls=new Hls({lowLatencyMode:false});
+    hls.on(Hls.Events.ERROR,(e,d)=>{if(d.fatal){clearTimeout(timer);fail()}});
+    hls.loadSource(c.url);hls.attachMedia(v);
+    hls.on(Hls.Events.MANIFEST_PARSED,()=>v.play().catch(()=>setMsg("Press play to start.")));
+  }else if(v.canPlayType("application/vnd.apple.mpegurl")){
+    v.src=c.url;v.onerror=()=>{clearTimeout(timer);fail()};v.play().catch(()=>setMsg("Press play to start."));
+  }else{setMsg("Your browser can't play these streams.",true)}
+}
+
+list.addEventListener("click",e=>{
+  if(e.target.closest("#more")){limit+=PAGE;render();return}
+  const b=e.target.closest(".ch");if(b)play(shown[+b.dataset.i]);
+});
+[q,cat,cty,geo].forEach(el=>el.addEventListener("input",filter));
+
+fetch(PLAYLIST).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(t=>{
+  all=parse(t);fillSelects();filter();
+}).catch(()=>{list.innerHTML="";const d=document.createElement("div");d.id="count";d.textContent="Couldn't load the channel list. Check your connection and refresh.";list.appendChild(d)});
+</script></body></html>
