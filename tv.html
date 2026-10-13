@@ -52,7 +52,7 @@ const PLAYLIST="https://iptv-org.github.io/iptv/index.m3u";
 const PAGE=150;
 const $=id=>document.getElementById(id);
 const list=$("list"),q=$("q"),cat=$("cat"),cty=$("cty"),geo=$("geo"),v=$("v"),now=$("now"),msg=$("msg"),nowStar=$("nowStar");
-let all=[],shown=[],limit=PAGE,hls=null,cur=null,timer=null;
+let all=[],shown=[],limit=PAGE,hls=null,cur=null,timer=null,checkedNote="";
 
 // Favorites are saved in this browser (localStorage), so they survive closing the site.
 // They stay on this device/browser only; clearing site data or private browsing erases them.
@@ -116,7 +116,7 @@ function filter(){
 function render(){
   list.textContent="";
   const cnt=document.createElement("div");cnt.id="count";
-  cnt.textContent=shown.length+" channel"+(shown.length===1?"":"s");
+  cnt.textContent=shown.length+" channel"+(shown.length===1?"":"s")+(cat.value===FAV?"":checkedNote);
   if(cat.value===FAV&&!shown.length)cnt.textContent=q.value.trim()?"No favorites match your search.":"No favorites yet. Tap the ☆ next to a channel to save it here.";
   list.appendChild(cnt);
   shown.slice(0,limit).forEach((c,i)=>{
@@ -173,8 +173,16 @@ nowStar.addEventListener("click",()=>{
 [q,cat,cty,geo].forEach(el=>el.addEventListener("input",filter));
 
 ensureFavOption();
-fetch(PLAYLIST).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(t=>{
-  all=parse(t);fillSelects();ensureFavOption();filter();
+// Preferred: tv-channels.json, a list where every channel passed a playback test (see tools/check-channels.mjs).
+// Fallback: the live iptv-org playlist (many of those channels are dead).
+const loadVetted=()=>fetch("tv-channels.json",{cache:"no-cache"}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
+  if(!d.channels||!d.channels.length)throw new Error("empty");
+  checkedNote=" · tested "+new Date(d.checked+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  return d.channels.map(a=>({name:a[0],url:a[1],logo:a[2],group:a[3],cc:a[4]}));
+});
+const loadLive=()=>fetch(PLAYLIST).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(parse);
+loadVetted().catch(loadLive).then(chs=>{
+  all=chs;fillSelects();ensureFavOption();filter();
 }).catch(()=>{
   // Playlist didn't load: favorites are saved locally, so they can still be shown.
   if(favs.size){cat.value=FAV;filter();const d=document.createElement("div");d.id="count";d.textContent="Couldn't load the full channel list, showing your favorites.";list.prepend(d)}
