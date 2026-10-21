@@ -8,9 +8,10 @@
 header{padding:28px 16px 12px;text-align:center}h1{margin:0 0 12px}
 .bar{display:flex;gap:10px;justify-content:center;flex-wrap:nowrap;max-width:720px;margin:0 auto}
 #q{flex:1 1 auto;min-width:0;max-width:480px;width:auto;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px}
-#logBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
-#logBtn:hover{background:var(--hi)}
-#logBtn{flex:none;white-space:nowrap}
+#logBtn,#moreBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
+#logBtn:hover,#moreBtn:hover{background:var(--hi)}
+#logBtn,#moreBtn{flex:none;white-space:nowrap}
+.sites{display:grid;gap:10px;padding:16px 20px 20px}.sites a{display:block;padding:14px;border-radius:12px;background:var(--card);color:var(--fg);text-decoration:none;font-weight:600;text-align:center}.sites a:hover{background:var(--hi)}.sites small{display:block;opacity:.7;font-weight:400;margin-top:2px}
 #logBtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5a5f;margin-left:8px}
 main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:16px;max-width:1200px;margin:auto}
 .card{display:flex;align-items:center;justify-content:center;text-align:center;min-height:70px;padding:12px;background:var(--card);border-radius:12px;color:var(--fg);text-decoration:none;font-weight:600}
@@ -24,7 +25,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 .db ul{margin:0;padding-left:20px}.db li{margin:5px 0}
 </style></head><body>
 <header><h1>GN.SS Games</h1>
-<div class="bar"><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
+<div class="bar"><button id="moreBtn" type="button">More Games</button><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
 <p class="count" id="n"></p></header>
 <main id="g">
 <a class="card" href="games/1-on-1-soccer.html">1 On 1 Soccer</a>
@@ -156,11 +157,13 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <a class="card" href="games/wrestle-bros.html">Wrestle Bros</a>
 <a class="card" href="games/zombie-rush.html">Zombie Rush</a>
 </main>
+<dialog id="more" aria-labelledby="moreT"><div class="dh"><h2 id="moreT">More Games</h2><button id="moreX" type="button" aria-label="Close">&times;</button></div><div class="sites"><a href="https://gme-io.github.io/gn.sci/">GN.SCI Games<small>46 more games</small></a><a href="https://gme-io.github.io/gn.sp/">GN.SP Games<small>45 more games</small></a></div></dialog>
 <dialog id="log" aria-labelledby="logT"><div class="dh"><h2 id="logT">Changelog</h2><button id="logX" type="button" aria-label="Close">&times;</button></div><div class="db" id="logBody"></div></dialog>
 <script>
 // Add new entries at the TOP of this list (newest first). The popup opens by itself once when the newest entry changes.
 const CHANGELOG=[
  {date:"2026-10-21",items:[
+  "Added a More Games button linking to two new game sites, GN.SCI and GN.SP, with 91 more games",
   "Removed the TV page and its button"
  ]},
  {date:"2026-10-13",items:[
@@ -181,6 +184,10 @@ const CHANGELOG=[
 const q=document.getElementById("q"),n=document.getElementById("n"),cs=[...document.querySelectorAll(".card")];
 function f(){const v=q.value.trim().toLowerCase();let c=0;cs.forEach(e=>{const s=e.textContent.toLowerCase().includes(v);e.style.display=s?"":"none";if(s)c++});n.textContent=c+" games"}
 q.addEventListener("input",f);f();
+const more=document.getElementById("more");
+document.getElementById("moreBtn").onclick=()=>more.showModal();
+document.getElementById("moreX").onclick=()=>more.close();
+more.addEventListener("click",e=>{if(e.target===more)more.close()});
 const dlg=document.getElementById("log"),dot=document.getElementById("dot"),KEY="gnss-changelog-seen";
 const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
 document.getElementById("logBody").innerHTML=CHANGELOG.map(e=>"<h3>"+fmt(e.date).toUpperCase()+"</h3><ul>"+e.items.map(i=>"<li>"+i.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</li>").join("")+"</ul>").join("");
