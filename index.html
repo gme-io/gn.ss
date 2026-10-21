@@ -8,10 +8,9 @@
 header{padding:28px 16px 12px;text-align:center}h1{margin:0 0 12px}
 .bar{display:flex;gap:10px;justify-content:center;flex-wrap:nowrap;max-width:720px;margin:0 auto}
 #q{flex:1 1 auto;min-width:0;max-width:480px;width:auto;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px}
-#logBtn,#tvBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
-#logBtn:hover,#tvBtn:hover{background:var(--hi)}
-#tvBtn{text-decoration:none;display:inline-flex;align-items:center}
-#tvBtn,#logBtn{flex:none;white-space:nowrap}
+#logBtn{padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;cursor:pointer}
+#logBtn:hover{background:var(--hi)}
+#logBtn{flex:none;white-space:nowrap}
 #logBtn .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff5a5f;margin-left:8px}
 main{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;padding:16px;max-width:1200px;margin:auto}
 .card{display:flex;align-items:center;justify-content:center;text-align:center;min-height:70px;padding:12px;background:var(--card);border-radius:12px;color:var(--fg);text-decoration:none;font-weight:600}
@@ -25,7 +24,7 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 .db ul{margin:0;padding-left:20px}.db li{margin:5px 0}
 </style></head><body>
 <header><h1>GN.SS Games</h1>
-<div class="bar"><a id="tvBtn" href="tv.html">TV</a><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
+<div class="bar"><input id="q" type="search" placeholder="Search 128 games..." autofocus><button id="logBtn" type="button">Changelog<span class="dot" id="dot" hidden></span></button></div>
 <p class="count" id="n"></p></header>
 <main id="g">
 <a class="card" href="games/1-on-1-soccer.html">1 On 1 Soccer</a>
@@ -161,6 +160,9 @@ dialog::backdrop{background:rgba(0,0,0,.6)}
 <script>
 // Add new entries at the TOP of this list (newest first). The popup opens by itself once when the newest entry changes.
 const CHANGELOG=[
+ {date:"2026-10-21",items:[
+  "Removed the TV page and its button"
+ ]},
  {date:"2026-10-13",items:[
   "TV now only lists channels that passed a playback test: 5,102 working channels instead of thousands of dead ones (tested Oct 13). Your saved favorites are kept"
  ]},
