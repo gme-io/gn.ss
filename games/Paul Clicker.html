@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head>
-<title>Inbox</title>
+<head><title>Inbox</title>
 <link rel="icon" href="../favicon.ico">
 <script>try{Object.defineProperty(document,"title",{configurable:true,get:function(){return"Inbox"},set:function(){}})}catch(e){}</script>
 <script>(function(){function f(){try{if(!document.head&&document.documentElement)document.documentElement.insertBefore(document.createElement("head"),document.documentElement.firstChild);if(document.title!=="Inbox")document.title="Inbox";if(document.head&&!document.head.querySelector("link[rel~=icon]")){var l=document.createElement("link");l.rel="icon";l.href="../favicon.ico";document.head.appendChild(l)}}catch(e){}}f();setInterval(f,300)})()</script>
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
 <style>
@@ -102,10 +102,15 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
 .board .me{font-size:.85rem; color:var(--mute)}
 .board .me button{font:600 .8rem var(--body); background:none; border:0; color:var(--tomato); cursor:pointer; text-decoration:underline; padding:0}
 .board ol{list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px}
-.board li{display:grid; grid-template-columns:2.2em 1fr auto; gap:8px; align-items:center; background:#fff; border:2px solid var(--line); border-radius:12px; padding:6px 10px; font-variant-numeric:tabular-nums}
+.board li{display:grid; grid-template-columns:2.2em 34px 1fr auto; gap:8px; align-items:center; background:#fff; border:2px solid var(--line); border-radius:12px; padding:6px 10px; font-variant-numeric:tabular-nums}
 .board li .rank{font-family:var(--display); font-size:1.1rem}
 .board li .nm{font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .board li .sc{font-weight:700; font-size:.9rem}
+.av{width:34px; height:34px; border-radius:50%; border:2px solid var(--line); background:var(--sky2); display:grid; place-items:center; font-family:var(--display); font-size:1rem; overflow:hidden; object-fit:cover}
+.avpick{display:flex; align-items:center; gap:12px}
+.avpick .av{width:56px; height:56px; font-size:1.5rem; flex:none}
+.avpick .btns{display:flex; gap:8px; flex-wrap:wrap}
+.avpick .btn{font-size:.8rem}
 .board li.you{background:var(--sun)}
 .board li:nth-child(1) .rank{color:#c98a00} .board li:nth-child(2) .rank{color:#7a8699} .board li:nth-child(3) .rank{color:#b0603a}
 .board .note{font-size:.85rem; color:var(--mute); margin:10px 0 0}
@@ -147,7 +152,7 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
   <section class="board" aria-labelledby="boardTitle">
     <div class="board-head">
       <h2 id="boardTitle">Leaderboard</h2>
-      <span class="me">Playing as <b id="meName">?</b> · <button type="button" id="changeName">Change name</button></span>
+      <span class="me">Playing as <b id="meName">?</b> · <button type="button" id="changeName">Edit profile</button></span>
     </div>
     <ol id="boardList"></ol>
     <p class="note" id="boardNote">Loading the leaderboard…</p>
@@ -178,6 +183,17 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
     <div class="row">
       <label for="firstName">First name<input id="firstName" autocomplete="given-name" maxlength="15" required></label>
       <label for="lastInitial">Last initial<input id="lastInitial" maxlength="1" required></label>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:4px">Profile photo <span style="font-weight:400;color:var(--mute)">(optional)</span></div>
+      <div class="avpick">
+        <span class="av" id="avPreview">?</span>
+        <div class="btns">
+          <label class="btn" for="avatarFile">Choose photo</label>
+          <input type="file" id="avatarFile" accept="image/*" hidden>
+          <button type="button" class="btn" id="avatarRemove" hidden>Remove</button>
+        </div>
+      </div>
     </div>
     <div class="err" id="gateErr" role="alert"></div>
     <button class="go" type="submit">Start clicking</button>
@@ -395,6 +411,8 @@ function popText(x,y,txt){
   $('zone').appendChild(p); setTimeout(()=>p.remove(),900);
 }
 
+// Holding Enter/Space doesn't auto-click: ignore key repeats
+$('paul').addEventListener('keydown', e=>{ if(e.repeat && (e.key==='Enter'||e.key===' ')) e.preventDefault(); });
 $('paul').addEventListener('click', e=>{
   if(!S.player){ openGate(); return; }
   const n=perClick(); earn(n); S.clicks++;
@@ -422,7 +440,7 @@ $('photo').addEventListener('change', e=>{
 $('resetPhoto').onclick=()=>{ S.photo=null; renderPaul(); save(); };
 $('reset').onclick=()=>{ $('confirmBox').hidden=false; };
 $('no').onclick=()=>{ $('confirmBox').hidden=true; };
-$('yes').onclick=()=>{ const p=S.photo, pl=S.player; S=fresh(); S.photo=p; S.player=pl; boost.until=0; save(); $('confirmBox').hidden=true; update(); };
+$('yes').onclick=()=>{ const p=S.photo, pl=S.player, av=S.avatar; S=fresh(); S.photo=p; S.player=pl; S.avatar=av; boost.until=0; save(); $('confirmBox').hidden=true; update(); };
 
 // Golden Paul
 function spawnGolden(){
@@ -486,9 +504,13 @@ const LB = (()=>{
           const v=d.data(); const li=document.createElement('li');
           if(d.id===playerId) li.className='you';
           const r=document.createElement('span'); r.className='rank'; r.textContent=i+1;
+          let a;
+          if(typeof v.photo==='string' && v.photo.startsWith('data:image/jpeg;base64,')){ a=document.createElement('img'); a.src=v.photo; a.alt=''; }
+          else { a=document.createElement('span'); a.textContent=String(v.name||'?').charAt(0); }
+          a.className='av';
           const n=document.createElement('span'); n.className='nm'; n.textContent=String(v.name||'?')+(d.id===playerId?' (you)':'');
           const c=document.createElement('span'); c.className='sc'; c.textContent=fmt(Number(v.score)||0);
-          li.append(r,n,c); ol.appendChild(li);
+          li.append(r,a,n,c); ol.appendChild(li);
         });
         note(snap.empty?'No scores yet. Start clicking to claim first place.':'');
       }, err=>note('Could not load the leaderboard ('+err.code+'). Check the Firestore rules.'));
@@ -499,17 +521,39 @@ const LB = (()=>{
     const score=Math.floor(S.total);
     if(!force && score===lastSent) return;
     lastSent=score;
-    col.doc(playerId).set({name:S.player, score, updated:firebase.firestore.FieldValue.serverTimestamp()})
+    const body={name:S.player, score, updated:firebase.firestore.FieldValue.serverTimestamp()};
+    if(force) body.photo=S.avatar||'';
+    col.doc(playerId).set(body,{merge:true})
       .catch(err=>note('Could not save your score ('+err.code+').'));
   }
-  setInterval(()=>push(false), 20000);
+  setInterval(()=>push(false), 45000);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) push(false); });
   return {push};
 })();
 
 function showName(){ $('meName').textContent=S.player||'?'; }
+let pendingAvatar;
+function showAvatarPreview(){
+  const el=$('avPreview'); el.textContent='';
+  if(pendingAvatar){ const i=document.createElement('img'); i.src=pendingAvatar; i.alt='Your photo'; i.style.cssText='width:100%;height:100%;object-fit:cover'; el.appendChild(i); }
+  else el.textContent=($('firstName').value.trim()[0]||'?').toUpperCase();
+  $('avatarRemove').hidden=!pendingAvatar;
+}
+$('avatarFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const img=new Image(); img.onload=()=>{
+    const c=document.createElement('canvas'), sz=96, m=Math.min(img.width,img.height);
+    c.width=c.height=sz; c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,sz,sz);
+    pendingAvatar=c.toDataURL('image/jpeg',0.7); showAvatarPreview();
+  }; img.onerror=()=>{ $('gateErr').textContent='That file is not a photo we can read. Try a JPG or PNG.'; }; img.src=rd.result; };
+  rd.readAsDataURL(f);
+});
+$('avatarRemove').onclick=()=>{ pendingAvatar=''; showAvatarPreview(); };
+$('firstName').addEventListener('input',()=>{ if(!pendingAvatar) showAvatarPreview(); });
 function openGate(){
   if(S.player){ const [f,l]=S.player.split(' '); $('firstName').value=f; $('lastInitial').value=(l||'').replace('.',''); }
+  pendingAvatar=S.avatar||''; showAvatarPreview();
   $('gateErr').textContent=''; $('gate').hidden=false; $('firstName').focus();
 }
 $('gateForm').addEventListener('submit',e=>{
@@ -518,6 +562,7 @@ $('gateForm').addEventListener('submit',e=>{
   if(!/^[A-Za-z][A-Za-z'-]{0,14}$/.test(f)){ $('gateErr').textContent='Type your first name (letters only).'; return; }
   if(!/^[A-Za-z]$/.test(l)){ $('gateErr').textContent='Type one letter for your last initial.'; return; }
   S.player=f[0].toUpperCase()+f.slice(1).toLowerCase()+' '+l.toUpperCase()+'.';
+  S.avatar=pendingAvatar||'';
   save(); showName(); $('gate').hidden=true; LB.push(true);
 });
 $('changeName').onclick=openGate;
