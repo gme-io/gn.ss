@@ -201,6 +201,13 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
   </section>
 </div>
 
+<div class="gate" id="sleepGate" hidden>
+  <form id="sleepForm">
+    <h2>Paul is busy</h2>
+    <p>Paul Clicker is open in another tab, so this one is paused to keep your score safe.</p>
+    <button class="go" type="submit">Play here instead</button>
+  </form>
+</div>
 <div class="gate" id="gate" hidden>
   <form id="gateForm" novalidate>
     <h2>Who's clicking Paul?</h2>
@@ -360,10 +367,11 @@ const NEWS = [
   "Astronomers discover planet made entirely of Paul. 'It waved at us.'",
 ];
 
+let asleep=false; // true when this game is open in another tab
 let S = fresh();
 function fresh(){ return {pauls:0,total:0,clicks:0,gold:0,owned:{},ups:[],photo:null}; }
 function load(){ try{ const d=JSON.parse(localStorage.getItem('paulClicker')||'null'); if(d) S=Object.assign(fresh(),d);}catch(e){} }
-function save(){ try{ localStorage.setItem('paulClicker', JSON.stringify(S)); }catch(e){ if(S.photo){ try{ const c={...S,photo:null}; localStorage.setItem('paulClicker',JSON.stringify(c)); }catch(_){} } } }
+function save(){ if(asleep) return; try{ localStorage.setItem('paulClicker', JSON.stringify(S)); }catch(e){ if(S.photo){ try{ const c={...S,photo:null}; localStorage.setItem('paulClicker',JSON.stringify(c)); }catch(_){} } } }
 
 let boost = {mult:1, until:0, label:''};
 const $ = id => document.getElementById(id);
@@ -499,7 +507,7 @@ function randomNews(){
 
 // game loop
 let last=Date.now();
-setInterval(()=>{ const now=Date.now(); earn(pps()*(now-last)/1000); last=now; update(); },100);
+setInterval(()=>{ const now=Date.now(); if(asleep){ last=now; return; } earn(pps()*(now-last)/1000); last=now; update(); },100);
 setInterval(save,5000);
 setInterval(randomNews,9000);
 
@@ -539,21 +547,64 @@ const LB = (()=>{
         });
         note(snap.empty?'No scores yet. Start clicking to claim first place.':'');
       }, err=>note('Could not load the leaderboard ('+err.code+'). Check the Firestore rules.'));
+      // Remote reset: the owner sets reset: true on this player's leaderboard entry in Firebase
+      col.doc(playerId).onSnapshot(d=>{
+        if(asleep || !d.exists) return;
+        const v=d.data();
+        if(v.reset!==true) return;
+        const keep={photo:S.photo, player:S.player, avatar:S.avatar};
+        S=Object.assign(fresh(),keep); boost.until=0;
+        save(); renderPaul(); update();
+        news('Your progress was reset by the game owner. Back to zero Pauls!');
+        lastSent=0;
+        col.doc(playerId).set({name:S.player||v.name, score:0, photo:S.avatar||'', updated:firebase.firestore.FieldValue.serverTimestamp()})
+          .catch(err=>note('Could not finish the reset ('+err.code+').'));
+      }, ()=>{});
     }catch(e){ note('Could not connect to Firebase. Double-check the setup values.'); }
   }
   function push(force){
-    if(!col || !S.player) return;
+    if(!col || !S.player || asleep) return;
     const score=Math.floor(S.total);
     if(!force && score===lastSent) return;
     lastSent=score;
     const body={name:S.player, score, updated:firebase.firestore.FieldValue.serverTimestamp()};
     if(force) body.photo=S.avatar||'';
     col.doc(playerId).set(body,{merge:true})
-      .catch(err=>note('Could not save your score ('+err.code+').'));
+      .catch(err=>{
+        if(err.code==='permission-denied'){
+          if(!force) return; // score lower than your best (e.g. after a reset): keep the best
+          // still save a name/photo change without lowering the score
+          const b2={name:body.name, updated:body.updated}; if('photo' in body) b2.photo=body.photo;
+          return col.doc(playerId).set(b2,{merge:true}).catch(e2=>note('Could not save your profile ('+e2.code+').'));
+        }
+        note('Could not save your score ('+err.code+').');
+      });
   }
   setInterval(()=>push(false), 45000);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) push(false); });
   return {push};
+})();
+
+// ---------- Chat filter ----------
+// Word lists are encoded so the page source isn't full of slurs.
+const FILTER=(()=>{
+  const L=JSON.parse(atob('eyJiIjogeyJzdWIiOiBbIm5pZ2dlciIsICJuaWdnYSIsICJuaWdnYWgiLCAiZmFnZ290IiwgImZhZ290IiwgInRyYW5ueSIsICJ0cmFubmllIiwgIndldGJhY2siLCAidG93ZWxoZWFkIiwgInJhZ2hlYWQiLCAic2hlbWFsZSIsICJraWxseW91cnNlbGYiLCAia2lsbHVyc2VsZiIsICJraWx5b3Vyc2VsZiJdLCAid29yZCI6IFsibmlnIiwgIm5pZ3MiLCAibmlnZ2FzIiwgIm5pZ2dlcnMiLCAiZmFnIiwgImZhZ3MiLCAiZmFnZ3kiLCAiZHlrZSIsICJkeWtlcyIsICJob21vIiwgImhvbW9zIiwgInRhcmQiLCAidGFyZHMiLCAiY29vbiIsICJjb29ucyIsICJzcGljIiwgInNwaWNzIiwgInNwaWNrIiwgImtpa2UiLCAia2lrZXMiLCAiY2hpbmsiLCAiY2hpbmtzIiwgImdvb2siLCAiZ29va3MiLCAicGFraSIsICJwYWtpcyIsICJreXMiLCAibWlkZ2V0IiwgIm1pZGdldHMiLCAiYmVhbmVyIiwgImJlYW5lcnMiLCAiY3VudCIsICJjdW50cyIsICJneXAiLCAiamFwIiwgImphcHMiLCAic3BheiIsICJ0cmFubnkiLCAicmV0YXJkIiwgInJldGFyZHMiLCAicmV0YXJkZWQiLCAicmV0YXJ0ZWQiLCAicmV0YXJkbyJdfSwgInMiOiB7InByZSI6IFsiZnVjayIsICJzaGl0IiwgImJpdGNoIiwgImFzc2hvbGUiLCAiZGFtbiIsICJjcmFwIiwgInBpc3MiLCAiYmFzdGFyZCIsICJidWxsc2hpdCIsICJtb3RoZXJmdWNrIiwgImR1bWJhc3MiLCAiamFja2FzcyIsICJkb3VjaGUiXSwgImV4YWN0IjogWyJhc3MiLCAiYXNzZXMiLCAiZGljayIsICJkaWNrcyIsICJwcmljayIsICJwcmlja3MiLCAid3RmIiwgInN0ZnUiLCAiYWYiXX19'));
+  const leet={'0':'o','1':'i','!':'i','|':'i','3':'e','4':'a','@':'a','5':'s','$':'s','7':'t','+':'t','8':'b','9':'g'};
+  const norm=t=>t.toLowerCase().replace(/[0-9!|@$+]/g,c=>leet[c]||c);
+  const rx=w=>new RegExp(w.split('').map(c=>c+'+').join(''));          // allows stretched letters: niiigger
+  const subRx=L.b.sub.map(rx);
+  const wordRx=L.b.word.map(w=>new RegExp('^'+w.split('').map(c=>c+'+').join('')+'$'));
+  const pat=w=>w.split('').map(c=>c+'+').join('');
+  const swearRx=L.s.pre.map(w=>new RegExp('^'+pat(w))).concat(L.s.exact.map(w=>new RegExp('^'+pat(w)+'$')));
+  const words=t=>norm(t).split(/[^a-z]+/).filter(Boolean);
+  return {
+    isDerogatory(t){
+      const n=norm(t), joined=n.replace(/[^a-z]/g,'');
+      if(subRx.some(r=>r.test(joined))) return true;
+      return words(t).some(w=>wordRx.some(r=>r.test(w)));
+    },
+    swearCount(t){ return words(t).filter(w=>swearRx.some(r=>r.test(w))).length; }
+  };
 })();
 
 // ---------- Live chat ----------
@@ -567,30 +618,70 @@ const LB = (()=>{
     const nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 60;
     box.textContent='';
     const docs=snap.docs.slice().reverse();
+    recent=docs.map(d=>d.data().pid);
     if(!docs.length){ const e=document.createElement('p'); e.className='empty'; e.textContent='No messages yet. Say hi!'; box.appendChild(e); return; }
     docs.forEach(d=>{
       const v=d.data({serverTimestamps:'estimate'});
       const m=document.createElement('div'); m.className='msg'+(v.pid===pid?' me':'');
       const b=document.createElement('b'); b.textContent=String(v.name||'?')+': ';
-      const t=document.createElement('span'); t.textContent=String(v.text||'');
+      const t=document.createElement('span');
+      if(FILTER.isDerogatory(String(v.text||'')) || FILTER.isDerogatory(String(v.name||''))){ t.textContent='[message removed]'; t.style.cssText='font-style:italic;color:var(--mute)'; }
+      else t.textContent=String(v.text||'');
       const tm=document.createElement('time');
       if(v.time && v.time.toDate) tm.textContent=tf.format(v.time.toDate());
       m.append(b,t,tm); box.appendChild(m);
     });
     if(nearBottom || snap.docChanges().some(c=>c.type==='added' && c.doc.data().pid===pid)) box.scrollTop=box.scrollHeight;
   }, err=>{ box.innerHTML=''; const e=document.createElement('p'); e.className='empty'; e.textContent='Could not load chat ('+err.code+'). Check the Firestore rules.'; box.appendChild(e); });
-  let last=0;
+  let last=0, recent=[], sentTimes=[], swearTimes=[], lastText='';
   $('sendForm').addEventListener('submit',e=>{
     e.preventDefault();
     if(!S.player){ openGate(); return; }
     const text=$('chatInput').value.replace(/\s+/g,' ').trim();
     if(!text) return;
-    const wait=3000-(Date.now()-last);
+    const now=Date.now();
+    const wait=3000-(now-last);
     if(wait>0){ note('Slow down! Wait '+Math.ceil(wait/1000)+'s.'); return; }
-    last=Date.now(); note(''); $('chatInput').value='';
+    sentTimes=sentTimes.filter(x=>now-x<30000);
+    if(sentTimes.length>=5){ note('Too many messages. Wait '+Math.ceil((30000-(now-sentTimes[0]))/1000)+'s.'); return; }
+    const streak=recent.length>=3 && recent.slice(-3).every(x=>x===pid);
+    if(streak && now-last<20000){ note('Let someone else talk! Wait '+Math.ceil((20000-(now-last))/1000)+'s.'); return; }
+    if(text.toLowerCase()===lastText){ note("You just said that."); return; }
+    if(FILTER.isDerogatory(text)){ note('That message has a word that isn\'t allowed here.'); return; }
+    const sw=FILTER.swearCount(text);
+    swearTimes=swearTimes.filter(x=>now-x<120000);
+    if(sw>2){ note('Easy on the swearing. Max 2 per message.'); return; }
+    if(sw && swearTimes.length+sw>6){ note('Too much swearing. Try again in '+Math.ceil((120000-(now-swearTimes[0]))/1000)+'s.'); return; }
+    for(let i=0;i<sw;i++) swearTimes.push(now);
+    sentTimes.push(now); last=now; lastText=text.toLowerCase(); note(''); $('chatInput').value='';
     chat.add({name:S.player, text:text.slice(0,200), pid, time:firebase.firestore.FieldValue.serverTimestamp()})
       .catch(err=>{ note('Message not sent ('+err.code+').'); $('chatInput').value=text; });
   });
+})();
+
+// ---------- One tab at a time ----------
+(()=>{
+  let bc; try{ bc=new BroadcastChannel('paul-clicker'); }catch(e){ return; }
+  const tabId=Math.random().toString(36).slice(2);
+  const reloadState=()=>{ load(); renderPaul(); update(); if(typeof showName==='function') showName(); };
+  bc.onmessage=e=>{
+    const m=e.data||{};
+    if(m.id===tabId) return;
+    if(m.t==='claim'){
+      const wasAwake=!asleep;
+      if(wasAwake){ save(); asleep=true; }
+      $('sleepGate').hidden=false;
+      // hand over the latest progress directly (storage can lag between tabs)
+      bc.postMessage({t:'ack',id:tabId,state:wasAwake?JSON.stringify(S):null});
+    }
+    else if(m.t==='ack' && !asleep && m.state){
+      try{ S=Object.assign(fresh(),JSON.parse(m.state)); }catch(err){ return; }
+      renderPaul(); update(); showName(); save();
+    }
+  };
+  const claim=()=>{ asleep=false; $('sleepGate').hidden=true; reloadState(); bc.postMessage({t:'claim',id:tabId}); };
+  $('sleepForm').addEventListener('submit',e=>{ e.preventDefault(); claim(); });
+  bc.postMessage({t:'claim',id:tabId});
 })();
 
 function showName(){ $('meName').textContent=S.player||'?'; }
@@ -623,6 +714,7 @@ $('gateForm').addEventListener('submit',e=>{
   let f=$('firstName').value.trim(), l=$('lastInitial').value.trim();
   if(!/^[A-Za-z][A-Za-z'-]{0,14}$/.test(f)){ $('gateErr').textContent='Type your first name (letters only).'; return; }
   if(!/^[A-Za-z]$/.test(l)){ $('gateErr').textContent='Type one letter for your last initial.'; return; }
+  if(FILTER.isDerogatory(f)){ $('gateErr').textContent="That name isn't allowed. Use your real first name."; return; }
   S.player=f[0].toUpperCase()+f.slice(1).toLowerCase()+' '+l.toUpperCase()+'.';
   S.avatar=pendingAvatar||'';
   save(); showName(); $('gate').hidden=true; LB.push(true);
