@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Paul Clicker — Banned</title>
+  <link rel="icon" href="../favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --sky:#8fd3ff; --sky2:#c9ecff; --sun:#ffd23f; --tomato:#ff5a36;
+      --ink:#1f2a44; --card:#fffaf0; --line:#1f2a44; --mute:#5a6a8a;
+      --display:"Bagel Fat One", "Arial Black", system-ui, sans-serif;
+      --body:"Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+      color-scheme: light;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--body);
+      color:var(--ink);
+      background: radial-gradient(circle at 50% 0%, var(--sky2), var(--sky) 60%);
+      background-color: var(--sky);
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .panel{
+      width:min(500px,100%);
+      background:var(--card);
+      border:3px solid var(--line);
+      border-radius:22px;
+      box-shadow:6px 6px 0 var(--line);
+      padding:28px 24px;
+      text-align:center;
+    }
+    h1{
+      margin:0 0 12px;
+      font-family:var(--display);
+      font-weight:400;
+      font-size:clamp(2.1rem,7vw,3rem);
+      letter-spacing:.5px;
+      color:var(--tomato);
+      -webkit-text-stroke:2px var(--line);
+      text-shadow:3px 3px 0 rgba(31,42,68,.08);
+    }
+    p{
+      margin:0;
+      font-size:1rem;
+      line-height:1.5;
+      color:var(--ink);
+    }
+    .badge{
+      display:inline-block;
+      margin-top:18px;
+      background:var(--sun);
+      border:2px solid var(--line);
+      border-radius:999px;
+      padding:8px 14px;
+      font-weight:800;
+      font-size:.85rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .note{
+      margin-top:18px;
+      font-size:.9rem;
+      color:var(--mute);
+    }
+  </style>
+</head>
+<body>
+  <main class="panel" aria-live="polite">
+    <h1>You were banned</h1>
+    <p>This account has been blocked from Paul Clicker.</p>
+    <div class="badge">Access denied</div>
+    <p class="note">If you think this was a mistake, contact the site admin.</p>
+  </main>
+</body>
+</html>
