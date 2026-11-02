@@ -87,6 +87,7 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
 .item:hover:not(:disabled){background:#fff3c4; transform:translateX(2px)}
 .item:focus-visible{outline:3px solid var(--tomato); outline-offset:2px}
 .item:disabled{opacity:.45; cursor:not-allowed}
+.item .ico.up{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif; font-size:1.4rem; background:var(--sun)}
 .item .ico{width:44px; height:44px; border-radius:10px; background:var(--sky2); border:2px solid var(--line); display:grid; place-items:center; font-family:var(--display); font-size:1.2rem}
 .item .name{font-weight:800; line-height:1.15}
 .item .desc{font-size:.8rem; color:var(--mute); line-height:1.3}
@@ -102,7 +103,11 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
 .board h2{font-family:var(--display); font-weight:400; font-size:1.5rem; margin:0}
 .board .me{font-size:.85rem; color:var(--mute)}
 .board .me button{font:600 .8rem var(--body); background:none; border:0; color:var(--tomato); cursor:pointer; text-decoration:underline; padding:0}
-.board ol{list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px}
+.board ol{list-style:none; margin:10px 0 0; padding:0 6px 0 0; max-height:360px; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--line) transparent; display:grid; gap:6px}
+.board ol::-webkit-scrollbar{width:8px}
+.board ol::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px}
+.board .rankline{font-size:.85rem; font-weight:700; margin:8px 0 0}
+.board .rankline button{font:700 .8rem var(--body); background:none; border:0; color:var(--tomato); text-decoration:underline; cursor:pointer; padding:0}
 .board li{display:grid; grid-template-columns:2.2em 34px 1fr auto; gap:8px; align-items:center; background:#fff; border:2px solid var(--line); border-radius:12px; padding:6px 10px; font-variant-numeric:tabular-nums}
 .board li .rank{font-family:var(--display); font-size:1.1rem}
 .board li .nm{font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -203,6 +208,7 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
       <span class="me">Playing as <b id="meName">?</b> · <button type="button" id="changeName">Edit profile</button></span>
     </div>
     <ol id="boardList"></ol>
+    <p class="rankline" id="rankLine" hidden></p>
     <p class="note" id="boardNote">Loading the leaderboard…</p>
   </section>
   <section class="chat" aria-labelledby="chatTitle">
@@ -346,39 +352,39 @@ const BUILDINGS = [
   {id:'prime', name:'Paul Prime', ico:'Ω', desc:'The original Paul. The one all Pauls come from.', base:5.4e22, pps:5.1e14},
 ];
 const UPGRADES = [
-  {id:'hand', name:"Paul's Firm Handshake", desc:'Clicks give 2× Pauls.', cost:100, kind:'click', mult:2},
-  {id:'runner', name:'Runner Paul', desc:'Paul laces up his running shoes. Clicks give 3× Pauls and all buildings produce 1.25× faster.', cost:1000, kind:'runner', mult:3, bmult:1.25},
-  {id:'pool', name:'Pool', desc:'Everyone starts calling him Pool. He answers to it. All buildings produce 1.5× Pauls.', cost:7500, kind:'all', mult:1.5},
-  {id:'boulder', name:'Boulder', desc:'Paul\'s dog joins the team. Good boy. All buildings produce 1.5× Pauls.', cost:15000, kind:'all', mult:1.5},
-  {id:'foodstealer', name:'Food Stealer Paul', desc:'Paul "borrows" a goldfish out of every bag. Each click also steals 3% of your Pauls per second.', cost:45000, kind:'clickpct', pct:0.03},
-  {id:'swimmer', name:'Swimmer Paul', desc:'Paul dives in, goggles on. Clicks give 4× Pauls.', cost:30000, kind:'click', mult:4},
-  {id:'cousin2', name:'John Brings Snacks', desc:'Johns are 2× as effective.', cost:500, kind:'b', target:'cousin', mult:2, req:{cousin:5}},
-  {id:'hand2', name:'Paul Remembers Your Name', desc:'Clicks give 2× Pauls again.', cost:2500, kind:'click', mult:2, req:{_clicks:150}},
-  {id:'mirror2', name:'Infinity Mirror', desc:'Mirrors are 2× as effective.', cost:5000, kind:'b', target:'mirror', mult:2, req:{mirror:5}},
-  {id:'click%', name:'Paul Believes In You', desc:'Each click also adds 2% of your Pauls per second.', cost:20000, kind:'clickpct', pct:0.02, req:{fanclub:3}},
-  {id:'fan2', name:'Matching T-Shirts', desc:'Fan Clubs are 2× as effective.', cost:55000, kind:'b', target:'fanclub', mult:2, req:{fanclub:10}},
-  {id:'gold', name:'Golden Retriever Named Paul', desc:'Golden Pauls show up twice as often.', cost:77777, kind:'gold'},
-  {id:'all', name:'Paul Gets a Promotion', desc:'All buildings produce 1.5× Pauls.', cost:500000, kind:'all', mult:1.5, req:{factory:1}},
-  {id:'clone2', name:'Better Goo', desc:'Cloning Vats are 2× as effective.', cost:600000, kind:'b', target:'clone', mult:2, req:{clone:10}},
-  {id:'all2', name:'Paul for President', desc:'All buildings produce 2× Pauls.', cost:5e7, kind:'all', mult:2, req:{embassy:1}},
-  {id:'goggles', name:'Golden Goggles', desc:'Swimmer Paul\'s finest. Clicks give 10× Pauls.', cost:5e9, kind:'click', mult:10, req:{_clicks:1000}},
-  {id:'abs', name:'Paul Gets Six-Pack Abs', desc:'All buildings produce 2× Pauls.', cost:1e11, kind:'all', mult:2, req:{olympool:1}},
-  {id:'olympool2', name:'Lane Hog Paul', desc:'Olympic Paul Pools are 2× as effective.', cost:1e11, kind:'b', target:'olympool', mult:2, req:{olympool:10}},
-  {id:'goldmine2', name:'Rainbow Goldfish', desc:'Goldfish Mines are 2× as effective.', cost:1.5e12, kind:'b', target:'goldmine', mult:2, req:{goldmine:10}},
-  {id:'hype', name:'Paul Hype Train', desc:'Each click also adds 5% of your Pauls per second.', cost:1e12, kind:'clickpct', pct:0.05, req:{goldmine:1}},
-  {id:'kennel2', name:'Boulder Learns Sit', desc:'Boulder\'s Kennels are 2× as effective.', cost:2e13, kind:'b', target:'kennel', mult:2, req:{kennel:10}},
-  {id:'marathon2', name:'Carbo-Loading Paul', desc:'Infinite Paul Marathons are 2× as effective.', cost:2.8e14, kind:'b', target:'marathon', mult:2, req:{marathon:10}},
-  {id:'johnpaul', name:'John Becomes Paul', desc:'John finally gets it. All buildings produce 2× Pauls.', cost:1e14, kind:'all', mult:2, req:{marathon:1}},
-  {id:'timemachine2', name:'Yearbook Glasses', desc:'Paul Time Machines are 2× as effective.', cost:3.4e15, kind:'b', target:'timemachine', mult:2, req:{timemachine:10}},
-  {id:'moonbase2', name:'Moon Goldfish', desc:'Paul Moon Bases are 2× as effective.', cost:4.2e16, kind:'b', target:'moonbase', mult:2, req:{moonbase:10}},
-  {id:'poolparty', name:'Pool Party', desc:'Every Paul, Pool and Boulder is invited. All buildings produce 3× Pauls.', cost:1e17, kind:'all', mult:3, req:{empire:1}},
-  {id:'empire2', name:'Emperor Pool\'s Crown', desc:'Galactic Paul Empires are 2× as effective.', cost:5.2e17, kind:'b', target:'empire', mult:2, req:{empire:10}},
-  {id:'blackhole2', name:'Event Horizon Haircut', desc:'Paul Black Holes are 2× as effective.', cost:6.2e18, kind:'b', target:'blackhole', mult:2, req:{blackhole:10}},
-  {id:'dimension2', name:'Paul From Another Dimension Visits', desc:'Paul Dimensions are 2× as effective.', cost:1.4e20, kind:'b', target:'dimension', mult:2, req:{dimension:10}},
-  {id:'temple2', name:'The Sacred Hoodie', desc:'Ascended Paul Temples are 2× as effective.', cost:2.4e21, kind:'b', target:'temple', mult:2, req:{temple:10}},
-  {id:'ultra', name:'Final Form: Ultra Paul', desc:'Paul powers up. All buildings produce 5× Pauls.', cost:1e21, kind:'all', mult:5, req:{singularity:1}},
-  {id:'singularity2', name:'Infinite Paul Theorem', desc:'Paul Singularities are 2× as effective.', cost:3.8e22, kind:'b', target:'singularity', mult:2, req:{singularity:10}},
-  {id:'prime2', name:'Paul Remembers Everything', desc:'Paul Primes are 2× as effective.', cost:1.1e24, kind:'b', target:'prime', mult:2, req:{prime:10}},
+  {id:'hand', ico:'🤝', name:"Paul's Firm Handshake", desc:'Clicks give 2× Pauls.', cost:100, kind:'click', mult:2},
+  {id:'runner', ico:'👟', name:'Runner Paul', desc:'Paul laces up his running shoes. Clicks give 3× Pauls and all buildings produce 1.25× faster.', cost:1000, kind:'runner', mult:3, bmult:1.25},
+  {id:'pool', ico:'🏊', name:'Pool', desc:'Everyone starts calling him Pool. He answers to it. All buildings produce 1.5× Pauls.', cost:7500, kind:'all', mult:1.5},
+  {id:'boulder', ico:'🐕', name:'Boulder', desc:'Paul\'s dog joins the team. Good boy. All buildings produce 1.5× Pauls.', cost:15000, kind:'all', mult:1.5},
+  {id:'foodstealer', ico:'🐟', name:'Food Stealer Paul', desc:'Paul "borrows" a goldfish out of every bag. Each click also steals 3% of your Pauls per second.', cost:45000, kind:'clickpct', pct:0.03},
+  {id:'swimmer', ico:'🥽', name:'Swimmer Paul', desc:'Paul dives in, goggles on. Clicks give 4× Pauls.', cost:30000, kind:'click', mult:4},
+  {id:'cousin2', ico:'🍿', name:'John Brings Snacks', desc:'Johns are 2× as effective.', cost:500, kind:'b', target:'cousin', mult:2, req:{cousin:5}},
+  {id:'hand2', ico:'💬', name:'Paul Remembers Your Name', desc:'Clicks give 2× Pauls again.', cost:2500, kind:'click', mult:2, req:{_clicks:150}},
+  {id:'mirror2', ico:'🪞', name:'Infinity Mirror', desc:'Mirrors are 2× as effective.', cost:5000, kind:'b', target:'mirror', mult:2, req:{mirror:5}},
+  {id:'click%', ico:'💪', name:'Paul Believes In You', desc:'Each click also adds 2% of your Pauls per second.', cost:20000, kind:'clickpct', pct:0.02, req:{fanclub:3}},
+  {id:'fan2', ico:'👕', name:'Matching T-Shirts', desc:'Fan Clubs are 2× as effective.', cost:55000, kind:'b', target:'fanclub', mult:2, req:{fanclub:10}},
+  {id:'gold', ico:'🦮', name:'Golden Retriever Named Paul', desc:'Golden Pauls show up twice as often.', cost:77777, kind:'gold'},
+  {id:'all', ico:'📈', name:'Paul Gets a Promotion', desc:'All buildings produce 1.5× Pauls.', cost:500000, kind:'all', mult:1.5, req:{factory:1}},
+  {id:'clone2', ico:'🧪', name:'Better Goo', desc:'Cloning Vats are 2× as effective.', cost:600000, kind:'b', target:'clone', mult:2, req:{clone:10}},
+  {id:'all2', ico:'🗳️', name:'Paul for President', desc:'All buildings produce 2× Pauls.', cost:5e7, kind:'all', mult:2, req:{embassy:1}},
+  {id:'goggles', ico:'🏅', name:'Golden Goggles', desc:'Swimmer Paul\'s finest. Clicks give 10× Pauls.', cost:5e9, kind:'click', mult:10, req:{_clicks:1000}},
+  {id:'abs', ico:'🏋️', name:'Paul Gets Six-Pack Abs', desc:'All buildings produce 2× Pauls.', cost:1e11, kind:'all', mult:2, req:{olympool:1}},
+  {id:'olympool2', ico:'🏁', name:'Lane Hog Paul', desc:'Olympic Paul Pools are 2× as effective.', cost:1e11, kind:'b', target:'olympool', mult:2, req:{olympool:10}},
+  {id:'goldmine2', ico:'🌈', name:'Rainbow Goldfish', desc:'Goldfish Mines are 2× as effective.', cost:1.5e12, kind:'b', target:'goldmine', mult:2, req:{goldmine:10}},
+  {id:'hype', ico:'🚂', name:'Paul Hype Train', desc:'Each click also adds 5% of your Pauls per second.', cost:1e12, kind:'clickpct', pct:0.05, req:{goldmine:1}},
+  {id:'kennel2', ico:'🦴', name:'Boulder Learns Sit', desc:'Boulder\'s Kennels are 2× as effective.', cost:2e13, kind:'b', target:'kennel', mult:2, req:{kennel:10}},
+  {id:'marathon2', ico:'🍝', name:'Carbo-Loading Paul', desc:'Infinite Paul Marathons are 2× as effective.', cost:2.8e14, kind:'b', target:'marathon', mult:2, req:{marathon:10}},
+  {id:'johnpaul', ico:'🔁', name:'John Becomes Paul', desc:'John finally gets it. All buildings produce 2× Pauls.', cost:1e14, kind:'all', mult:2, req:{marathon:1}},
+  {id:'timemachine2', ico:'👓', name:'Yearbook Glasses', desc:'Paul Time Machines are 2× as effective.', cost:3.4e15, kind:'b', target:'timemachine', mult:2, req:{timemachine:10}},
+  {id:'moonbase2', ico:'🌙', name:'Moon Goldfish', desc:'Paul Moon Bases are 2× as effective.', cost:4.2e16, kind:'b', target:'moonbase', mult:2, req:{moonbase:10}},
+  {id:'poolparty', ico:'🎉', name:'Pool Party', desc:'Every Paul, Pool and Boulder is invited. All buildings produce 3× Pauls.', cost:1e17, kind:'all', mult:3, req:{empire:1}},
+  {id:'empire2', ico:'👑', name:'Emperor Pool\'s Crown', desc:'Galactic Paul Empires are 2× as effective.', cost:5.2e17, kind:'b', target:'empire', mult:2, req:{empire:10}},
+  {id:'blackhole2', ico:'💈', name:'Event Horizon Haircut', desc:'Paul Black Holes are 2× as effective.', cost:6.2e18, kind:'b', target:'blackhole', mult:2, req:{blackhole:10}},
+  {id:'dimension2', ico:'🌀', name:'Paul From Another Dimension Visits', desc:'Paul Dimensions are 2× as effective.', cost:1.4e20, kind:'b', target:'dimension', mult:2, req:{dimension:10}},
+  {id:'temple2', ico:'🧥', name:'The Sacred Hoodie', desc:'Ascended Paul Temples are 2× as effective.', cost:2.4e21, kind:'b', target:'temple', mult:2, req:{temple:10}},
+  {id:'ultra', ico:'⚡', name:'Final Form: Ultra Paul', desc:'Paul powers up. All buildings produce 5× Pauls.', cost:1e21, kind:'all', mult:5, req:{singularity:1}},
+  {id:'singularity2', ico:'♾️', name:'Infinite Paul Theorem', desc:'Paul Singularities are 2× as effective.', cost:3.8e22, kind:'b', target:'singularity', mult:2, req:{singularity:10}},
+  {id:'prime2', ico:'🧠', name:'Paul Remembers Everything', desc:'Paul Primes are 2× as effective.', cost:1.1e24, kind:'b', target:'prime', mult:2, req:{prime:10}},
 ];
 const NEWS = [
   "Scientists confirm: there are now more Pauls than pigeons.",
@@ -470,7 +476,7 @@ function renderPaul(){
 function buildShop(){
   $('buildings').innerHTML = BUILDINGS.map(b=>`<button class="item" id="b-${b.id}"><span class="ico">${b.ico}</span><span><span class="name">${b.name}</span><br><span class="desc">${b.desc} +${fmt(b.pps)}/s each</span><br><span class="cost" id="bc-${b.id}"></span></span><span class="owned" id="bo-${b.id}">0</span></button>`).join('');
   BUILDINGS.forEach(b=> $('b-'+b.id).onclick=()=>{ const c=cost(b); if(S.pauls>=c){ S.pauls-=c; S.owned[b.id]=owned(b.id)+1; save(); update(); } });
-  $('upgrades').innerHTML = UPGRADES.map(u=>`<button class="item" id="u-${u.id}"><span class="ico">↑</span><span><span class="name">${u.name}</span><br><span class="desc">${u.desc}</span></span><span class="cost">${fmt(u.cost)}</span></button>`).join('');
+  $('upgrades').innerHTML = UPGRADES.map(u=>`<button class="item" id="u-${u.id}"><span class="ico up" aria-hidden="true">${u.ico||'↑'}</span><span><span class="name">${u.name}</span><br><span class="desc">${u.desc}</span></span><span class="cost">${fmt(u.cost)}</span></button>`).join('');
   UPGRADES.forEach(u=> $('u-'+u.id).onclick=()=>{ if(S.pauls>=u.cost && !has(u.id)){ S.pauls-=u.cost; S.ups.push(u.id); save(); update(); } });
 }
 
@@ -718,12 +724,12 @@ const LB = (()=>{
   const col=NET.db.collection('lb2');
   function render(){
     if(!lastSnap) return;
-    const ol=$('boardList'); ol.textContent='';
+    const ol=$('boardList'), keepScroll=ol.scrollTop; ol.textContent='';
     const me=NET.uid, admin=ADMIN.on();
-    const docs=lastSnap.docs.filter(d=>!NET.bans.has(d.id)).slice(0,20);
+    const docs=lastSnap.docs.filter(d=>!NET.bans.has(d.id));
     docs.forEach((d,i)=>{
       const v=d.data(); const li=document.createElement('li');
-      if(d.id===me) li.className='you';
+      if(d.id===me){ li.className='you'; li.id='myRow'; }
       const r=document.createElement('span'); r.className='rank'; r.textContent=i+1;
       let a;
       if(typeof v.photo==='string' && v.photo.startsWith('data:image/jpeg;base64,')){ a=document.createElement('img'); a.src=v.photo; a.alt=''; }
@@ -741,10 +747,16 @@ const LB = (()=>{
       }
       ol.appendChild(li);
     });
+    ol.scrollTop=keepScroll;
     note(docs.length?'':'No scores yet this season. Start clicking to claim first place.');
+    const myRank=docs.findIndex(d=>d.id===me)+1, rl=$('rankLine');
+    rl.hidden=!docs.length; rl.textContent='';
+    rl.append((myRank?'You are #'+myRank+' of ':'')+docs.length+' player'+(docs.length===1?'':'s')+(myRank?' · ':''));
+    if(myRank){ const jb=document.createElement('button'); jb.type='button'; jb.textContent='Jump to me';
+      jb.onclick=()=>{ const r=$('myRow'); if(r) ol.scrollTop=r.offsetTop-ol.offsetTop-ol.clientHeight/2+r.offsetHeight/2; }; rl.append(jb); }
   }
   NET.listeners.push(render);
-  LIVE.add(()=>col.orderBy('score','desc').limit(25).onSnapshot(snap=>{
+  LIVE.add(()=>col.orderBy('score','desc').limit(500).onSnapshot(snap=>{
     lastSnap=snap; render();
     const mine=NET.uid && snap.docs.find(d=>d.id===NET.uid); if(mine) checkReset(mine.data());
   }, err=>note(err.code==='resource-exhausted'?quotaMsg:'Could not load the leaderboard ('+err.code+'). Check the Firestore rules.')));
