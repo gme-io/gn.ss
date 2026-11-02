@@ -598,7 +598,17 @@ function randomNews(){
 
 // game loop
 let last=Date.now();
-setInterval(()=>{ const now=Date.now(); if(asleep||bannedNow||closedNow){ last=now; return; } earn(pps()*(now-last)/1000); last=now; update(); },100);
+setInterval(()=>{
+  const now=Date.now();
+  if(asleep||bannedNow||closedNow){ last=now; return; }
+  let dt=(now-last)/1000; last=now;
+  const since=secondsSinceOpen();          // null for the owner
+  if(since!==null){
+    if(since<0){ checkHours(); return; }    // it just hit closing time: stop earning right now
+    dt=Math.min(dt,since);                  // a tab asleep in the background never earns for closed time
+  }
+  earn(pps()*dt); update();
+},100);
 setInterval(save,5000);
 setInterval(randomNews,9000);
 
@@ -961,11 +971,19 @@ showName();
 if(!S.player) openGate();
 // ---------- Opening hours: Monday to Friday, 8:00 AM to 3:00 PM Eastern ----------
 const OPEN_MIN=8*60, CLOSE_MIN=15*60;
+const easternFmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'numeric',second:'numeric',hourCycle:'h23'});
 function easternNow(){
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(new Date());
+  const parts=easternFmt.formatToParts(new Date());
   const get=t=>(parts.find(x=>x.type===t)||{}).value||'';
   const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(get('weekday'));
-  return {day, min:(+get('hour')%24)*60+(+get('minute'))};
+  return {day, min:(+get('hour')%24)*60+(+get('minute')), sec:+get('second')};
+}
+// seconds since 8:00 AM today while open, -1 when closed, null for the owner (always open)
+function secondsSinceOpen(){
+  if(NET.user && !NET.user.isAnonymous) return null;
+  const {day,min,sec}=easternNow();
+  if(day<1 || day>5 || min<OPEN_MIN || min>=CLOSE_MIN) return -1;
+  return (min-OPEN_MIN)*60+sec;
 }
 function checkHours(){
   const {day,min:m}=easternNow();
