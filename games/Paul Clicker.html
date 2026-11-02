@@ -153,6 +153,10 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
 .admin li{display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,.1); border-radius:10px; padding:6px 10px}
 .admin .anote{color:var(--sun); font-weight:700; min-height:1em}
 .admin .go{font:400 1rem var(--display); background:var(--sun); color:var(--ink); border:2px solid #fff; border-radius:999px; padding:6px 14px; cursor:pointer; justify-self:start}
+.adminform{display:grid; gap:8px}
+.adminform label{display:grid; gap:4px; font-weight:700; font-size:.8rem}
+.adminform input{font:600 .95rem var(--body); border:2px solid #fff; border-radius:10px; padding:7px 10px; min-width:0; background:#fff; color:var(--ink)}
+.adminform input:focus-visible{outline:3px solid var(--sun); outline-offset:1px}
 .gate .big{font-size:3rem; line-height:1; text-align:center}
 @media (prefers-reduced-motion:reduce){ .rays,.golden{animation:none} .pop{animation-duration:1ms} }
 </style>
@@ -163,8 +167,12 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
   <div class="left">
   <section class="admin" id="adminPanel" hidden aria-labelledby="adminTitle">
     <h2 id="adminTitle">Ban Hammer</h2>
-    <p id="adminWho">Sign in with the Google account that owns the Firebase project.</p>
-    <button type="button" class="go" id="adminSignIn">Sign in with Google</button>
+    <p id="adminWho">Sign in with your owner email and password.</p>
+    <form id="adminForm" class="adminform" autocomplete="on">
+      <label for="adminEmail">Email<input id="adminEmail" type="email" autocomplete="username" required></label>
+      <label for="adminPass">Password<input id="adminPass" type="password" autocomplete="current-password" required></label>
+      <button type="submit" class="go" id="adminSignIn">Sign in</button>
+    </form>
     <p>Ban, Reset and Delete buttons show up on the leaderboard and chat while this panel is open. Each one asks "Sure?" first.</p>
     <h3>Banned players</h3>
     <ul id="banList"></ul>
@@ -647,7 +655,7 @@ const ADMIN=(()=>{
   const a={ on:()=>!panel.hidden && !!NET.user && !NET.user.isAnonymous };
   const msg=t=>{ $('adminNote').textContent=t; };
   const fail=err=>msg(err&&err.code==='permission-denied'
-    ?"Only the owner's Google account can do that. Check the email in your Firestore rules."
+    ?"Only the owner account can do that. Check the User UID in your Firestore rules."
     :"That didn't work ("+((err&&err.code)||err)+").");
   a.btn=(label,cls,fn)=>{
     const b=document.createElement('button'); b.type='button'; b.className='mini '+cls; b.textContent=label;
@@ -667,8 +675,8 @@ const ADMIN=(()=>{
   a.del=id=>NET.db.collection('chat').doc(id).delete().then(()=>msg('Message deleted.')).catch(fail);
   function render(){
     const signedIn=!!NET.user && !NET.user.isAnonymous;
-    $('adminSignIn').hidden=signedIn;
-    $('adminWho').textContent=signedIn?'Signed in as '+(NET.user.email||'a Google account')+'.':'Sign in with the Google account that owns the Firebase project.';
+    $('adminForm').hidden=signedIn;
+    $('adminWho').textContent=signedIn?'Signed in as '+(NET.user.email||'the owner')+'.':'Sign in with your owner email and password.';
     const ul=$('banList'); ul.textContent='';
     const ids=[...NET.bans]; $('banEmpty').hidden=ids.length>0;
     ids.forEach(uid=>{
@@ -678,24 +686,26 @@ const ADMIN=(()=>{
   }
   const sync=()=>{ panel.hidden=location.hash!=='#admin'; NET.changed(); };
   window.addEventListener('hashchange',sync);
-  $('adminSignIn').onclick=()=>{
+  $('adminForm').addEventListener('submit',e=>{
+    e.preventDefault();
     if(!NET.ok || !firebase.auth) return msg('Firebase is not connected.');
-    const prov=new firebase.auth.GoogleAuthProvider(), auth=firebase.auth(), u=auth.currentUser;
-    const p = u && u.isAnonymous
-      ? u.linkWithPopup(prov).catch(err=>{
-          if(err.code==='auth/credential-already-in-use' || err.code==='auth/email-already-in-use'){
-            const c=err.credential || (firebase.auth.GoogleAuthProvider.credentialFromError && firebase.auth.GoogleAuthProvider.credentialFromError(err));
-            return c ? auth.signInWithCredential(c) : auth.signInWithPopup(prov);
-          }
-          throw err;
-        })
-      : auth.signInWithPopup(prov);
-    p.then(()=>{ NET.user=auth.currentUser; NET.uid=NET.user.uid; msg(''); checkBanned(); NET.changed(); })
-     .catch(err=>msg(
-        err.code==='auth/unauthorized-domain' ? 'Add this website to Firebase → Authentication → Settings → Authorized domains.' :
-        err.code==='auth/operation-not-allowed' ? 'Turn on Google sign-in in Firebase → Authentication → Sign-in method.' :
-        err.code==='auth/popup-closed-by-user' ? '' : 'Sign-in failed ('+err.code+').'));
-  };
+    const email=$('adminEmail').value.trim(), pass=$('adminPass').value;
+    if(!email || !pass) return msg('Type your email and password.');
+    const auth=firebase.auth(), oldUser=auth.currentUser, oldUid=oldUser&&oldUser.isAnonymous?oldUser.uid:null;
+    msg('Signing in…');
+    auth.signInWithEmailAndPassword(email,pass)
+      .then(cred=>{
+        $('adminPass').value=''; msg('');
+        NET.user=cred.user; NET.uid=cred.user.uid; checkBanned(); NET.changed();
+        // remove the leaderboard spot this browser had before signing in, so you aren't listed twice
+        if(oldUid && oldUid!==cred.user.uid) NET.db.collection('lb2').doc(oldUid).delete().catch(()=>{});
+      })
+      .catch(err=>msg(
+        err.code==='auth/operation-not-allowed' ? 'Turn on Email/Password in Firebase → Authentication → Sign-in method.' :
+        (err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found'||err.code==='auth/invalid-login-credentials') ? 'Wrong email or password.' :
+        err.code==='auth/too-many-requests' ? 'Too many tries. Wait a few minutes.' :
+        'Sign-in failed ('+err.code+').'));
+  });
   NET.listeners.push(render);
   panel.hidden=location.hash!=='#admin'; render();
   return a;
