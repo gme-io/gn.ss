@@ -162,6 +162,7 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
 .adminform label{display:grid; gap:4px; font-weight:700; font-size:.8rem}
 .adminform input{font:600 .95rem var(--body); border:2px solid #fff; border-radius:10px; padding:7px 10px; min-width:0; background:#fff; color:var(--ink)}
 .adminform input:focus-visible{outline:3px solid var(--sun); outline-offset:1px}
+.admin.overgate{position:relative; z-index:60}
 .gate .big{font-size:3rem; line-height:1; text-align:center}
 @media (prefers-reduced-motion:reduce){ .rays,.golden{animation:none} .pop{animation-duration:1ms} }
 </style>
@@ -278,6 +279,14 @@ h1{font-family:var(--display); font-weight:400; font-size:clamp(2rem,7vw,2.8rem)
     <p>Cheaters broke the leaderboard, so everyone has been reset for Season 2.</p>
     <p>Because you played Season 1, you've been reborn: <b>everything you earn is worth 2× forever</b>, and you get a ★ next to your name.</p>
     <button class="go" type="submit">Let's go</button>
+  </form>
+</div>
+<div class="gate" id="closedGate" hidden>
+  <form onsubmit="return false">
+    <div class="big" aria-hidden="true">😴</div>
+    <h2>Paul is asleep</h2>
+    <p>Paul Clicker is open <b>Monday to Friday, 8:00 AM to 3:00 PM Eastern</b>.</p>
+    <p id="opensIn"></p>
   </form>
 </div>
 <div class="gate" id="banGate" hidden>
@@ -426,6 +435,7 @@ const NEWS = [
 ];
 
 let asleep=false; // true when this game is open in another tab
+let closedNow=false; // true outside opening hours
 let bannedNow=false; try{ bannedNow=localStorage.getItem('paulBanned')==='1'; }catch(e){}
 const SEASON = 2;   // raise this number to reset everyone again
 let S = fresh();
@@ -519,7 +529,7 @@ function popText(x,y,txt){
 $('paul').addEventListener('keydown', e=>{ if(e.repeat && (e.key==='Enter'||e.key===' ')) e.preventDefault(); });
 const clickLog=[]; let warnedFast=0;
 $('paul').addEventListener('click', e=>{
-  if(!e.isTrusted || bannedNow) return;          // ignore clicks faked by scripts
+  if(!e.isTrusted || bannedNow || closedNow) return;          // ignore clicks faked by scripts
   if(!S.player){ openGate(); return; }
   const t=performance.now();
   while(clickLog.length && t-clickLog[0]>1000) clickLog.shift();
@@ -562,7 +572,7 @@ function spawnGolden(){
   st.appendChild(g);
   const kill=setTimeout(()=>g.remove(),9000);
   g.onclick=e=>{
-    if(!e.isTrusted) return;
+    if(!e.isTrusted || closedNow) return;
     clearTimeout(kill); g.remove(); S.gold++;
     const roll=Math.random();
     if(roll<0.45){ const n=Math.max(13, Math.min(S.pauls*0.15, basePps()*900)+13); earn(n); popText(e.clientX,e.clientY,'Lucky! +'+fmt(n)); news('A Golden Paul! Pauls rain from the sky.'); }
@@ -588,7 +598,7 @@ function randomNews(){
 
 // game loop
 let last=Date.now();
-setInterval(()=>{ const now=Date.now(); if(asleep||bannedNow){ last=now; return; } earn(pps()*(now-last)/1000); last=now; update(); },100);
+setInterval(()=>{ const now=Date.now(); if(asleep||bannedNow||closedNow){ last=now; return; } earn(pps()*(now-last)/1000); last=now; update(); },100);
 setInterval(save,5000);
 setInterval(randomNews,9000);
 
@@ -607,7 +617,7 @@ const LIVE=(()=>{
   const subs=[]; let on=false, offTimer=null;
   const start=()=>{ clearTimeout(offTimer); if(on) return; on=true; subs.forEach(x=>{ x.unsub=x.open(); }); };
   const stop=()=>{ if(!on) return; on=false; subs.forEach(x=>{ if(x.unsub){ x.unsub(); x.unsub=null; } }); };
-  const want=()=>!document.hidden && !asleep;
+  const want=()=>!document.hidden && !asleep && !closedNow;
   document.addEventListener('visibilitychange',()=>{ if(want()) start(); else { clearTimeout(offTimer); offTimer=setTimeout(()=>{ if(!want()) stop(); },60000); } });
   return {
     add(open){ const x={open,unsub:null}; subs.push(x); if(on) x.unsub=open(); },
@@ -859,6 +869,7 @@ const FILTER=(()=>{
   $('sendForm').addEventListener('submit',e=>{
     e.preventDefault();
     if(bannedNow){ note('You are banned from the chat.'); return; }
+    if(closedNow){ note('Paul Clicker is closed right now.'); return; }
     if(!S.player){ openGate(); return; }
     if(!NET.uid){ note('Connecting… try again in a second.'); return; }
     const pid=NET.uid;
@@ -948,6 +959,38 @@ $('changeName').onclick=openGate;
 $('rebirthForm').addEventListener('submit',e=>{ e.preventDefault(); $('rebirthGate').hidden=true; });
 showName();
 if(!S.player) openGate();
+// ---------- Opening hours: Monday to Friday, 8:00 AM to 3:00 PM Eastern ----------
+const OPEN_MIN=8*60, CLOSE_MIN=15*60;
+function easternNow(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(new Date());
+  const get=t=>(parts.find(x=>x.type===t)||{}).value||'';
+  const day=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(get('weekday'));
+  return {day, min:(+get('hour')%24)*60+(+get('minute'))};
+}
+function checkHours(){
+  const {day,min:m}=easternNow();
+  const isOwner=!!NET.user && !NET.user.isAnonymous;   // the owner can always play
+  const weekday=day>=1 && day<=5;
+  const open=weekday && m>=OPEN_MIN && m<CLOSE_MIN;
+  const wasClosed=closedNow;
+  closedNow=!open && !isOwner;
+  $('closedGate').hidden=!closedNow;
+  $('adminPanel').classList.toggle('overgate', closedNow);  // owner can still sign in at #admin
+  if(closedNow){
+    // next opening: later today, or the next weekday at 8:00 AM
+    let days=0;
+    if(!(weekday && m<OPEN_MIN)){ days=1; while(((day+days)%7)===0 || ((day+days)%7)===6) days++; }
+    if(days===0 || days===1){
+      const wait=days ? 1440-m+OPEN_MIN : OPEN_MIN-m, h=Math.floor(wait/60), mm=wait%60;
+      $('opensIn').textContent='Opens in '+(h?h+' hr ':'')+mm+' min.';
+    } else $('opensIn').textContent='Opens Monday at 8:00 AM Eastern.';
+    if(!wasClosed){ save(); LB.push(false); }
+  }
+  if(wasClosed!==closedNow) LIVE.sync();
+}
+NET.listeners.push(checkHours);
+checkHours();
+setInterval(checkHours,20000);
 LIVE.sync();
 })();
 </script>
